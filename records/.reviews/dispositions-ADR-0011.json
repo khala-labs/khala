@@ -1,0 +1,107 @@
+[
+  {
+    "issue_id": "I-001",
+    "disposition": "accepted",
+    "reason": "Record now names ADR-0003 as a parent; its 'vouched via ken' tier clause is marked unimplemented (not retracted); coverage and orphan list stated as not produced."
+  },
+  {
+    "issue_id": "I-002",
+    "disposition": "accepted",
+    "reason": "Amendment semantics made explicit: accepted ADRs are not edited; this record is the successor ruling; linked_adrs carries lineage."
+  },
+  {
+    "issue_id": "I-003",
+    "disposition": "accepted",
+    "reason": "Decision 3 cut to what ADR-0002 gate (a) permits: no meter, hook, schema or kill criteria designed here; the comprehension log is the only pre-gate step; design deferred to the direction's first SPEC after the director declares the gate."
+  },
+  {
+    "issue_id": "I-004",
+    "disposition": "accepted",
+    "reason": "Context reconciled with ADR-0004: Adept's single 2026-07-02 dogfood run is named as the 'real puller'; the claim is now 'never ran a second time', not 'never wired'."
+  },
+  {
+    "issue_id": "I-005",
+    "disposition": "accepted",
+    "reason": "Softened: Observer v0.4-0.5 ground in data that lives in Nexus; ADR-0004's grounding-division claim is not retracted; what is retired is the implementation."
+  },
+  {
+    "issue_id": "I-006",
+    "disposition": "accepted",
+    "reason": "Retirement reframed as a maintenance decision for this repository on three grounds (non-actionable hits, evaluator-written profile, substitutes), not a refutation; sample fragility (3.3% per PR) stated."
+  },
+  {
+    "issue_id": "I-007",
+    "disposition": "accepted",
+    "reason": "Removed from this record together with the rest of the meter design; single-person limits (author = subject = grader) named as a constraint the future SPEC must address."
+  },
+  {
+    "issue_id": "I-008",
+    "disposition": "accepted",
+    "reason": "Schema removed from this record; belongs to the SPEC."
+  },
+  {
+    "issue_id": "I-009",
+    "disposition": "accepted",
+    "reason": "Hash conflation named explicitly: Arbiter content_hash over governed content vs git blob hash over the whole file; the SPEC must define which."
+  },
+  {
+    "issue_id": "I-010",
+    "disposition": "accepted",
+    "reason": "Kill criteria removed from this record; the re-ask logic concern is left for the SPEC."
+  },
+  {
+    "issue_id": "I-011",
+    "disposition": "accepted",
+    "reason": "Removed with the kill criteria; no thresholds or sample size asserted in this record."
+  },
+  {
+    "issue_id": "I-012",
+    "disposition": "accepted",
+    "reason": "Removed with the kill criteria."
+  },
+  {
+    "issue_id": "I-013",
+    "disposition": "accepted",
+    "reason": "Decision 2 now separates two phases with distinct labelled units (uncovered lines vs survivors) and states the phase threshold is unset and must be set before phase 2."
+  },
+  {
+    "issue_id": "I-014",
+    "disposition": "accepted",
+    "reason": "'Used every day' replaced by a ledger-verifiable statement (every SPEC/ADR including this one passed through Arbiter; sidecars in records/.reviews); the negative claim now states its search scope."
+  },
+  {
+    "issue_id": "I-015",
+    "disposition": "accepted",
+    "reason": "Reproducibility stated as a cost judgement, not a demonstrated reproduction; Probe's retirement rests on cost of an unrun tool."
+  },
+  {
+    "issue_id": "I-016",
+    "disposition": "accepted",
+    "reason": "Question-validity and bridge-fallback concerns deferred with the design to the SPEC; no question generation is specified in this record."
+  },
+  {
+    "issue_id": "I-017",
+    "disposition": "accepted",
+    "reason": "All new construction removed from the record (hook, script, data file, engine choice as a decision, label vocabulary as a decision are now described only as experiment shape or deferred)."
+  },
+  {
+    "issue_id": "I-018",
+    "disposition": "accepted",
+    "reason": "No reassignment: the Nexus-grounded functions are dropped with Observer; a future Nexus surface would need its own SPEC on its own evidence."
+  },
+  {
+    "issue_id": "I-019",
+    "disposition": "accepted",
+    "reason": "Consequence given a completion criterion (sentence present in each README Status section) and named as an owner action without date."
+  },
+  {
+    "issue_id": "I-020",
+    "disposition": "accepted",
+    "reason": "Rows named by new name with old name in parentheses throughout."
+  },
+  {
+    "issue_id": "I-021",
+    "disposition": "accepted",
+    "reason": "Adept Web's disposition stated (extracted with Adept into khala-labs/adept, archived); the ADR-0008 stale link named with its path."
+  }
+]
