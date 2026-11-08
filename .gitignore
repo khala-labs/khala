@@ -13,8 +13,6 @@ __pycache__/
 # machine-specific MCP registration (absolute paths)
 .mcp.json
 
-# adept-web manual E2E: isolated data dir + dropped server key (never commit)
-.e2e-data/
 .superpowers/
 
 # Korean eval Pack B — a frozen export of a live tenant (internal documents; never commit).
