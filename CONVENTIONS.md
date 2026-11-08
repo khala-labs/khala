@@ -54,8 +54,8 @@ is stamped. `GLOSSARY.md` lists what is frozen and why.
 
 ## Naming
 
-- **A lowercase top-level directory is a tool.** `nexus/`, `observer/`,
-  `arbiter/`, `probe/`, `adept/`, `adept-web/`, `docs/`. The directory name is the tool's canonical
+- **A lowercase top-level directory is a tool.** `nexus/`, `arbiter/`, `docs/`.
+  The directory name is the tool's canonical
   name. Adding a tool means adding a lowercase directory and a row in the
   README tool map. (Exception: shared non-tool directories such as `assets/`
   are also lowercase but are not tools and do not get a README entry.)
@@ -90,8 +90,6 @@ is stamped. `GLOSSARY.md` lists what is frozen and why.
   yearly bump a deliberate one.
 - **Raising a bound is a deliberate change**, not a side effect: bump it, run
   `task deps:lock`, and let the suites say whether the new major is actually fine.
-  The one exception is this repo's own path dependencies (`khala-adept`), which are
-  versioned in lockstep rather than resolved from an index.
 - **Node subprojects install from their lockfiles** — `npm ci` and
   `pnpm install --frozen-lockfile`, never bare `npm install`.
 
@@ -114,7 +112,7 @@ tested was never the version we declared.
   test:     adding or correcting tests
   chore:    build, tooling, or config
   ```
-  Scope by tool when it helps, e.g. `feat(probe): add review grounder`.
+  Scope by tool when it helps, e.g. `feat(nexus): add review grounder`.
 - Keep each PR scoped to a single tool and a single concern where possible.
 
 ## Running the local guards

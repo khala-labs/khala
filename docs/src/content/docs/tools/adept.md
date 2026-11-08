@@ -3,6 +3,10 @@ title: Adept
 description: The cognitive-debt meter. Measures whether a named human can still vouch for an artifact, via graded comprehension checks grounded in its actual content.
 ---
 
+:::note[Status]
+On 2026-11-08, the code for Adept was moved to its own repository under `https://github.com/khala-labs/adept` and is kept read-only as a record of the experiment, and this page is kept as the reference.
+:::
+
 Adept is the ledger half of Khala's answer to cognitive debt. The rest of the ecosystem keeps the org's knowledge governed — approved, current, cited. Adept reads that same substrate from the other side and asks the uncomfortable question: **can a named human still explain this?** Not via a rubber-stamp "I understand" click, but by passing graded comprehension questions generated from the artifact's actual content.
 
 The framing is a ledger. Registered critical artifacts are the **denominator** — what must be known. Current vouches are the **numerator** — what someone can still explain. The gap is cognitive debt, and because it is measured, it can be repaid deliberately instead of discovered during an incident.

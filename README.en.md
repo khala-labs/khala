@@ -85,10 +85,10 @@ The tools are grouped by status. The dates indicate the last functional change i
 
 | Tool | Role | Status (date) | Directory link |
 | --- | --- | --- | --- |
-| **Observer** | Platform-aware PR analyzer — PR scope, API spec lint/diff, review checklists; consumes Nexus. | Last code change 2026-07-11; later commits touched only documentation, terminology and formatting | [`./observer`](./observer) |
-| **Probe** | Mutation-driven test-quality harness — catches what advisory review misses. | Last feature change 2026-07-11; later commits were lint, dependency bounds, terminology and formatting | [`./probe`](./probe) |
-| **Adept** | Cognitive-debt meter — graded, grounded comprehension vouches; coverage + orphan hotlist. | Last feature change 2026-07-02; later commits were lint, dependency bounds, terminology and formatting | [`./adept`](./adept) |
-| **Adept web** | Team surface for the same meter — browser UI + server-backed (file or Postgres). | No functional change since 2026-08-02 | [`./adept-web`](./adept-web) |
+| **Observer** | Platform-aware PR analyzer — PR scope, API spec lint/diff, review checklists; consumes Nexus. | Last code change 2026-07-11; later commits touched only documentation, terminology and formatting | [khala-labs/observer](https://github.com/khala-labs/observer) |
+| **Probe** | Mutation-driven test-quality harness — catches what advisory review misses. | Last feature change 2026-07-11; later commits were lint, dependency bounds, terminology and formatting | [khala-labs/probe](https://github.com/khala-labs/probe) |
+| **Adept** | Cognitive-debt meter — graded, grounded comprehension vouches; coverage + orphan hotlist. | Last feature change 2026-07-02; later commits were lint, dependency bounds, terminology and formatting | [khala-labs/adept](https://github.com/khala-labs/adept) |
+| **Adept web** | Team surface for the same meter — browser UI + server-backed (file or Postgres). | No functional change since 2026-08-02 | [khala-labs/adept](https://github.com/khala-labs/adept) (`adept-web/`) |
 
 The rest of the repository is [`./docs`](./docs), an Astro Starlight ecosystem documentation site rather than a tool.
 
@@ -136,7 +136,7 @@ A system whose promise is calibration must hold itself to the same standard. The
 | **Pre-registered verdict rules** | Push · PR | An evaluation harness edited after seeing the score it produced | Enforces objective evaluation rules before benchmark execution. |
 | **Declared evaluation corpus** | Push · PR | A label run where nobody said which corpus to ask, or where no label can reach the one being asked | Prevents benchmark evaluation against invalid tenants or corpora. |
 
-Across the repository, 3,455 test functions are declared and 17 CI jobs run in CI, including real Postgres integration with schema migrations. Among governance artifacts (10 ADRs, 54 SPECs), 61 approved or accepted artifacts are stamped and cryptographically verified for integrity in CI via `scripts/ledger_integrity.py`.
+Across the repository, 3,278 test functions are declared and 11 CI jobs run in CI, including real Postgres integration with schema migrations. Among governance artifacts (10 ADRs, 54 SPECs), 61 approved or accepted artifacts are stamped and cryptographically verified for integrity in CI via `scripts/ledger_integrity.py`.
 
 - **[→ Engineering log](https://khala-labs.github.io/khala/engineering-log/)** — A dated record of what went wrong, how defects were discovered, and what was remediated.
 - Open items are tracked deterministically in [OPEN.md](./OPEN.md).
