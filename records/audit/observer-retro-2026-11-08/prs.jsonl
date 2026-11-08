@@ -1,0 +1,30 @@
+{"merge":"1dfa6b71919e056b16dfa916d04296b3460e6bad","mergedAt":"2026-10-18T01:53:17Z","nfiles":5,"number":582,"title":"fix(compose): dev stack services restart unless stopped"}
+{"merge":"3e363a5c5095535cb8f7d1e9086d17e0cb22703a","mergedAt":"2026-10-13T10:47:41Z","nfiles":1,"number":581,"title":"docs(terms): update c05 khala degraded term to failed path"}
+{"merge":"6389de3bc6f3723bdbf261554f29bd2ae31599b3","mergedAt":"2026-10-12T02:20:05Z","nfiles":55,"number":580,"title":"docs(terms): remaining lines use the reviewed dictionary"}
+{"merge":"376ca5be26e8875bcab1aa443b3063f5d203025c","mergedAt":"2026-10-06T10:39:32Z","nfiles":43,"number":579,"title":"docs(terms): tools, tests and root docs use the reviewed dictionary"}
+{"merge":"cf3db7d447611fb3a2c4b0339309a884d9cdbc78","mergedAt":"2026-10-06T10:39:27Z","nfiles":18,"number":578,"title":"docs(terms): the docs site uses the reviewed dictionary"}
+{"merge":"80ae9f65e23362c78b7521422f0121a256277c68","mergedAt":"2026-10-06T10:39:20Z","nfiles":20,"number":577,"title":"docs(terms): nexus documents use the reviewed dictionary"}
+{"merge":"3d4af1aaa7841422691f2a75b50e74b1b018031b","mergedAt":"2026-10-06T10:39:15Z","nfiles":100,"number":576,"title":"docs(terms): nexus comments and docstrings use the reviewed dictionary"}
+{"merge":"d13e19c2410e7683b75f577ee90a4acbb0034989","mergedAt":"2026-10-06T10:38:48Z","nfiles":2,"number":575,"title":"docs(terms): add shared terms document and ownership rules"}
+{"merge":"79e5b0cef6f4a573ea0ee30f10907aa12cf723ec","mergedAt":"2026-10-05T21:42:25Z","nfiles":22,"number":574,"title":"docs(readme): diagrams use a flat style and show the answer path"}
+{"merge":"b7035b6491677581abcfb56a06a2128c6123fefc","mergedAt":"2026-10-05T21:42:54Z","nfiles":9,"number":573,"title":"feat(search): the answer endpoints can take a separate search text"}
+{"merge":"7f72e14c7a0b2ec36f18a04ca84d187cd194be61","mergedAt":"2026-10-01T09:42:43Z","nfiles":1,"number":572,"title":"docs(search): record the consumer half of F1 - lower on the primary variable too"}
+{"merge":"db3927e17e07dab9c9d080ce580135eee44b9341","mergedAt":"2026-10-01T07:07:42Z","nfiles":1,"number":571,"title":"docs(search): record the F1 regression half - rejected by the pre-registered rule"}
+{"merge":"713a3dbd89e617fb4ad848bb04fcd6c55659bf7e","mergedAt":"2026-10-01T06:19:38Z","nfiles":13,"number":570,"title":"feat(search): fusion can count document agreement, behind a request flag (F1)"}
+{"merge":"2e565f3a6860e39d6f3c05d33e30fb7cfbdb24c9","mergedAt":"2026-10-01T06:13:29Z","nfiles":8,"number":569,"title":"feat(search): the answer path can return its evidence without generating"}
+{"merge":"b88277ccf9cc9313a8037417e033cc14ab7814af","mergedAt":"2026-10-01T04:10:32Z","nfiles":4,"number":568,"title":"fix(ingest): a hidden document is not re-read every cycle"}
+{"merge":"1bc997ce59c99cc72d6c0dfd3159ff68667ae578","mergedAt":"2026-10-01T04:08:31Z","nfiles":1,"number":567,"title":"docs(search): name the fusion treatments before measuring the split-chunk gap"}
+{"merge":"050e162032fdc5e02f09011493638ebe27c5d988","mergedAt":"2026-10-01T01:16:55Z","nfiles":11,"number":566,"title":"fix(graph): the sample entity list is no longer read in real tenants"}
+{"merge":"841ec72e7dd77302718abd8a7d9f821e3398b7dd","mergedAt":"2026-10-01T01:22:19Z","nfiles":5,"number":565,"title":"fix(search): the graph lookup asks each tenant of the read scope"}
+{"merge":"6114f59ca5e6074c29da5fea1f32a99efff4ed95","mergedAt":"2026-09-30T22:47:38Z","nfiles":9,"number":564,"title":"fix(search): a dead vector leg is on the record, and embedding waits 20 s"}
+{"merge":"a345281e9bd9abdbee309ad7240c6015d1e9bfb9","mergedAt":"2026-09-30T13:01:00Z","nfiles":5,"number":563,"title":"fix(bridge): the concurrency and queue wait in .env reach the gate"}
+{"merge":"bfc3f95d6c901b22fcf22145f202c3c944e3f5df","mergedAt":"2026-09-30T11:04:38Z","nfiles":14,"number":562,"title":"feat(versions): an answer says which corpus and which search stack produced it"}
+{"merge":"e1a9bf50bc1a59dfa32b47b8393e3980686ce0ec","mergedAt":"2026-09-30T10:24:35Z","nfiles":9,"number":561,"title":"feat(numbers): each number says where it was found; a trailing comma is not part of it"}
+{"merge":"8a501d2261437cabddfde5f355eba6902bfb5737","mergedAt":"2026-09-30T10:13:34Z","nfiles":11,"number":560,"title":"feat(api): answer_context puts the caller's material in front of the model, not the search"}
+{"merge":"e504044ec6c732df64512130ea72b44a94153c99","mergedAt":"2026-09-30T09:56:02Z","nfiles":6,"number":559,"title":"fix(bridge): an error from claude never comes back as an answer"}
+{"merge":"7809827829e1d4c4d1a8c0473616564f79aa4dc3","mergedAt":"2026-09-30T09:43:30Z","nfiles":16,"number":558,"title":"fix(llm): the prompt version covers everything that writes the prompt"}
+{"merge":"96f0b64e8d1ecd2dff13d3f2499584c1102e15ac","mergedAt":"2026-09-25T20:05:42Z","nfiles":4,"number":557,"title":"research: prior art for a canonical-link map and a central-axis information model"}
+{"merge":"efc373838e7ad4a4048c4a7f746280c038ca4ea1","mergedAt":"2026-09-23T09:00:28Z","nfiles":2,"number":555,"title":"research: what the field asks of bug-diagnosis agents, and how far it lets them go"}
+{"merge":"454eaa7ec8baa41cde3dd848d39367bbfd6392fc","mergedAt":"2026-09-23T07:59:53Z","nfiles":1,"number":554,"title":"docs(open): A27 closes — an answer now leads with the owner's ruling"}
+{"merge":"9efed31f1f703e47a0896630c91cac72b8e64ece","mergedAt":"2026-09-23T07:22:10Z","nfiles":19,"number":553,"title":"feat(claims): a claim remembers the owner's ruling, so an answer stops re-asking it"}
+{"merge":"b8615ee5b34203b0c0fd0e86d4a6d9ed44ca9d25","mergedAt":"2026-09-23T02:36:22Z","nfiles":4,"number":552,"title":"docs(api): the contract records what the API now refuses and reports"}
