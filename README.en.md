@@ -67,16 +67,30 @@ The reframe is recorded in [ADR-0002](adr/ADR-0002-reframe-system-command-debt.m
 
 ## The tools
 
-| Tool | One-liner | Directory |
-|---|---|---|
-| **Nexus** | Hybrid retrieval over your docs and OTel telemetry — every answer carries citations that are verified in code. | [`./nexus`](./nexus) |
-| **Archon** | Authority window over domain invariants — reads values from code constants at query time. Ships inside Nexus. | [`./nexus/nexus/claims`](./nexus/nexus/claims) |
-| **Observer** | Platform-aware PR analyzer — PR scope, API spec lint/diff, review checklists; consumes Nexus. | [`./observer`](./observer) |
-| **Arbiter** | ADR/SDD governance MCP — intercepts Write/Edit/MultiEdit when the PreToolUse hook is registered (Bash shell execution not gated); publishes approved specs to Nexus. | [`./arbiter`](./arbiter) |
-| **Probe** | Mutation-driven test-quality harness — catches what advisory review misses. | [`./probe`](./probe) |
-| **Adept** | Cognitive-debt meter — graded, grounded comprehension vouches; coverage + orphan hotlist. | [`./adept`](./adept) |
-| **Adept web** | Team surface for the same meter — browser UI + server-backed (file or Postgres). | [`./adept-web`](./adept-web) |
-| **docs** | Astro Starlight ecosystem documentation site. | [`./docs`](./docs) |
+The tools are grouped by status. The dates indicate the last functional change in this repository.
+
+### Running
+
+| Tool | Role | Status (date) | Directory link |
+| --- | --- | --- | --- |
+| **Nexus** | Hybrid retrieval over your docs and OTel telemetry — every answer carries citations that are verified in code.<br>- **Archon** (module inside Nexus, not a separate tool): Authority window over domain invariants — reads values from code constants at query time. | Running and deployed; last change 2026-10-18 | [`./nexus`](./nexus)<br>(Archon: [`./nexus/nexus/claims`](./nexus/nexus/claims)) |
+
+### Instrument in use
+
+| Tool | Role | Status (date) | Directory link |
+| --- | --- | --- | --- |
+| **Arbiter** | ADR/SDD governance MCP — intercepts Write/Edit/MultiEdit when the PreToolUse hook is registered (Bash shell execution not gated); publishes approved specs to Nexus. | Still used as the approval gate for ADRs and SPECs in this repository; last code change 2026-09-05 | [`./arbiter`](./arbiter) |
+
+### Stopped experiments
+
+| Tool | Role | Status (date) | Directory link |
+| --- | --- | --- | --- |
+| **Observer** | Platform-aware PR analyzer — PR scope, API spec lint/diff, review checklists; consumes Nexus. | Last code change 2026-07-11; later commits touched only documentation, terminology and formatting | [`./observer`](./observer) |
+| **Probe** | Mutation-driven test-quality harness — catches what advisory review misses. | Last feature change 2026-07-11; later commits were lint, dependency bounds, terminology and formatting | [`./probe`](./probe) |
+| **Adept** | Cognitive-debt meter — graded, grounded comprehension vouches; coverage + orphan hotlist. | Last feature change 2026-07-02; later commits were lint, dependency bounds, terminology and formatting | [`./adept`](./adept) |
+| **Adept web** | Team surface for the same meter — browser UI + server-backed (file or Postgres). | No functional change since 2026-08-02 | [`./adept-web`](./adept-web) |
+
+The rest of the repository is [`./docs`](./docs), an Astro Starlight ecosystem documentation site rather than a tool.
 
 ## Nexus answer path
 
