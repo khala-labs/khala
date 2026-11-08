@@ -34,7 +34,6 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 # optional surfaces pinned consistently with the default one.
 PROJECTS: dict[str, list[str]] = {
     "nexus": ["dev", "mcp", "a2a", "slack", "notion"],
-    "arbiter": ["dev"],
 }
 
 # uv emits path dependencies as editable requirements (`-e ../other`). pip refuses

@@ -148,10 +148,9 @@ tasks:
 
   # ---- aggregate ----------------------------------------------------------
   test:
-    desc: Run all subproject test suites (nexus, arbiter, docs)
+    desc: Run all subproject test suites (nexus, docs)
     cmds:
       - task: test:nexus
-      - task: test:arbiter
       - task: test:docs
 
   build:
@@ -199,13 +198,6 @@ tasks:
       # -m "not integration" keeps the baseline run DB-free.
       - pip install -e ".[dev,mcp]" -c constraints.txt
       - python -m pytest -q -m "not integration"
-
-  test:arbiter:
-    desc: arbiter tests (pytest)
-    dir: arbiter
-    cmds:
-      - pip install -e ".[dev]" -c constraints.txt
-      - python -m pytest -q
 
   test:docs:
     desc: docs typecheck (astro check)

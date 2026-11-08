@@ -63,7 +63,7 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.13"
-      - run: pip install pyyaml pytest
+      - run: pip install pyyaml pytest "khala-arbiter @ git+https://github.com/khala-labs/arbiter@master"
       - name: Every stamped artifact still matches its body
         run: python scripts/ledger_integrity.py
       - name: The check has teeth (negative control + read-only + manifest)
@@ -340,21 +340,6 @@ jobs:
             nexus-app:ci python -m pytest -q \
               tests/test_search_recall.py tests/test_recall_suite_runs.py tests/test_ko_eval_run_db.py tests/test_tokenizer_candidates.py
 
-  arbiter:
-    name: arbiter (pytest)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.13"
-      - name: Install arbiter
-        working-directory: arbiter
-        run: pip install -e ".[dev]" -c constraints.txt
-      - name: Run tests
-        working-directory: arbiter
-        run: python -m pytest -q
-
   ecosystem-e2e:
     name: ecosystem (a2a e2e, arbiter + nexus)
     runs-on: ubuntu-latest
@@ -373,9 +358,8 @@ jobs:
       - name: Install nexus (a2a extra, no mcp extra)
         working-directory: nexus
         run: pip install -e ".[dev,a2a]" -c constraints.txt
-      - name: Install arbiter
-        working-directory: arbiter
-        run: pip install -e ".[dev]" -c constraints.txt
+      - name: Install arbiter (from its own repository)
+        run: pip install "khala-arbiter @ git+https://github.com/khala-labs/arbiter@master"
       - name: Run the cross-tool E2E
         env:
           KHALA_REQUIRE_E2E: "1"
