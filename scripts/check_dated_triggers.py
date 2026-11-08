@@ -28,7 +28,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SPECS = ROOT / "specs"
+SPECS = ROOT / "records" / "specs"
 OPEN_MD = ROOT / "OPEN.md"
 
 #: `- <SPEC 이름 또는 항목 번호> — YYYY-MM-DD — <그날 무엇을 하는가>`

@@ -1,6 +1,6 @@
 # 설계 사양서 (Design Specs)
 
-Khala 생태계의 시스템 아키텍처 및 구현 상세 사양서입니다. 각 사양서(SPEC)는 [ADR](../adr)에 기록된 아키텍처 결정이 *어떻게* 구현되는지 상세히 기술합니다. [Arbiter](../arbiter)의 표준 거버넌스 형식(`SPEC-<slug>.md`, 메타데이터 frontmatter `id/type/title/status/date`)을 준수하며, 코드 구현 착수 전 반드시 Arbiter의 다단계 검증 게이트(`record` → `critique` → 이슈 처분 → `approve`)를 거쳐야 합니다.
+Khala 생태계의 시스템 아키텍처 및 구현 상세 사양서입니다. 각 사양서(SPEC)는 [ADR](../adr)에 기록된 아키텍처 결정이 *어떻게* 구현되는지 상세히 기술합니다. [Arbiter](https://github.com/khala-labs/arbiter)의 표준 거버넌스 형식(`SPEC-<slug>.md`, 메타데이터 frontmatter `id/type/title/status/date`)을 준수하며, 코드 구현 착수 전 반드시 Arbiter의 다단계 검증 게이트(`record` → `critique` → 이슈 처분 → `approve`)를 거쳐야 합니다.
 
 ## 사양 색인 (Index)
 

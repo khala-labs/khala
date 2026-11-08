@@ -63,14 +63,14 @@ ALLOWED_IDS = {
 
 #: 검사에서 빼는 경로 — 각 줄에 이유.
 SKIP = (
-    ".reviews/",                     # 콘텐츠 해시 기록. 16진이지만 페이지가 아니다
+    "records/.reviews/",                     # 콘텐츠 해시 기록. 16진이지만 페이지가 아니다
     "scripts/fingerprint_scan.py",   # 이 파일이 패턴 자체를 담는다
 )
 
 #: 스탬프된 기록물 안의 8자 접두. 본문을 고치면 해시가 깨지고, 접두로는 페이지를 못 연다.
 #: **되풀 수 없는 것만** 여기 들어간다 — 전체 ID 는 절대 안 된다.
 ALLOWED_PREFIXES = {
-    "specs/SPEC-nexus-search-recall.md": ("2740c71b",),
+    "records/specs/SPEC-nexus-search-recall.md": ("2740c71b",),
 }
 
 

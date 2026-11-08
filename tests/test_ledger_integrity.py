@@ -143,7 +143,7 @@ def test_the_run_is_read_only(repo: Path):
 def test_the_real_repository_is_clean():
     """No corpus size is pinned - that would go red on every legitimate addition and train
     maintainers to bump the number. The invariant is zero mismatches."""
-    checked, mismatches, _, manifest_failures = li.check(ROOT, li.DEFAULT_MANIFEST)
+    checked, mismatches, _, manifest_failures = li.check(li.RECORDS, li.DEFAULT_MANIFEST)
     assert mismatches == [], mismatches
     assert manifest_failures == [], manifest_failures
     assert checked > 0, "the selector matched nothing - a broken glob would look like success"
@@ -183,19 +183,19 @@ _GOOD = """
 
 
 def test_the_real_open_items_file_is_well_formed():
-    assert li.check_open_items(ROOT) == []
+    assert li.check_open_items(li.RECORDS) == []
 
 
 def test_a_missing_file_is_a_failure_not_a_pass(tmp_path: Path):
     """The point of the file is that frozen records have somewhere observable to keep an item.
     Absence must not read as 'nothing open'."""
-    problems = li.check_open_items(ROOT, tmp_path / "absent.yaml")
+    problems = li.check_open_items(li.RECORDS, tmp_path / "absent.yaml")
     assert problems and "missing" in problems[0]
 
 
 def test_an_item_missing_owner_or_trigger_fails(tmp_path: Path):
     p = _items(tmp_path, "- id: x\n  source: s\n  state: open\n  what: w\n")
-    assert li.check_open_items(ROOT, p)
+    assert li.check_open_items(li.RECORDS, p)
 
 
 def test_an_item_claiming_a_mechanical_check_must_have_a_mechanical_trigger(tmp_path: Path):
@@ -204,8 +204,8 @@ def test_an_item_claiming_a_mechanical_check_must_have_a_mechanical_trigger(tmp_
     bad = _GOOD.replace(
         "trigger: any SPEC whose linked_adrs contains ADR-0008 must say whether it addresses this",
         "trigger: when someone needs it")
-    assert li.check_open_items(ROOT, _items(tmp_path, bad))
-    assert li.check_open_items(ROOT, _items(tmp_path, _GOOD)) == []
+    assert li.check_open_items(li.RECORDS, _items(tmp_path, bad))
+    assert li.check_open_items(li.RECORDS, _items(tmp_path, _GOOD)) == []
 
 
 def _closed(extra: str = "") -> str:
@@ -215,8 +215,9 @@ def _closed(extra: str = "") -> str:
 
 
 def test_closing_an_item_requires_saying_how(tmp_path: Path):
-    assert li.check_open_items(ROOT, _items(tmp_path, _closed()))
-    assert li.check_open_items(ROOT, _items(tmp_path, _closed("  closed_by: PR #163\n"))) == []
+    assert li.check_open_items(li.RECORDS, _items(tmp_path, _closed()))
+    closed_with_how = _closed("  closed_by: PR #163\n")
+    assert li.check_open_items(li.RECORDS, _items(tmp_path, closed_with_how)) == []
 
 
 def test_a_closed_item_may_not_keep_a_trigger_or_a_reason_it_is_open(tmp_path: Path):
@@ -228,20 +229,20 @@ def test_a_closed_item_may_not_keep_a_trigger_or_a_reason_it_is_open(tmp_path: P
     itself: `trigger` was required of *every* item, so a closed row was obliged to keep one.
     """
     good = _closed("  closed_by: measured, and the measurement went against it\n")
-    assert li.check_open_items(ROOT, _items(tmp_path, good)) == []
+    assert li.check_open_items(li.RECORDS, _items(tmp_path, good)) == []
     for stale in ("  trigger: watch for the next SPEC\n", "  why_still_open: not taken up\n"):
-        assert li.check_open_items(ROOT, _items(tmp_path, good + stale)), \
+        assert li.check_open_items(li.RECORDS, _items(tmp_path, good + stale)), \
             f"닫힌 항목이 {stale.split(':')[0].strip()} 를 들고 있는데 통과했다"
 
 
 def test_an_open_item_still_must_carry_a_trigger(tmp_path: Path):
     """반대 방향. 닫힌 쪽을 풀어주면서 열린 쪽까지 느슨해지면 ADR-0009 가 거부한 형태가 돌아온다."""
     no_trigger = "\n".join(ln for ln in _GOOD.splitlines() if not ln.startswith("  trigger:"))
-    assert li.check_open_items(ROOT, _items(tmp_path, no_trigger))
+    assert li.check_open_items(li.RECORDS, _items(tmp_path, no_trigger))
 
 
 def test_duplicate_ids_are_caught(tmp_path: Path):
-    assert li.check_open_items(ROOT, _items(tmp_path, _GOOD + _GOOD))
+    assert li.check_open_items(li.RECORDS, _items(tmp_path, _GOOD + _GOOD))
 
 
 # ── retractions live outside the frozen body (OPEN.md H5 / A5) ───────────────
@@ -334,7 +335,7 @@ def test_a_missing_sidecar_is_not_a_failure(repo: Path):
 
 
 def test_the_real_repository_retractions_are_consistent():
-    assert li.check_retractions(ROOT) == []
+    assert li.check_retractions(li.RECORDS) == []
 
 
 def test_the_frozen_bodies_carry_no_retraction_footnote():
@@ -343,7 +344,7 @@ def test_the_frozen_bodies_carry_no_retraction_footnote():
     stamp check above proves they match, and this proves the retraction did not go back in."""
     for name in ("SPEC-nexus-a2a-external-exposure-audit-phase2",
                  "SPEC-nexus-query-text-retention"):
-        text = (ROOT / "specs" / f"{name}.md").read_text(encoding="utf-8")
+        text = (li.RECORDS / "specs" / f"{name}.md").read_text(encoding="utf-8")
         _, _, body = text[3:].partition("\n---")
         assert "철회" not in body, f"{name}: a retraction is back inside the signed body"
 
@@ -404,12 +405,13 @@ def test_every_in_review_artifact_in_this_repo_has_a_sidecar():
     from khala.arbiter.artifacts import Artifact
     from khala.arbiter.ledger import Ledger
 
-    led = Ledger(ROOT, now=lambda: "2026-11-08T00:00:00Z")  # read-only here; the clock is unused
+    # read-only here; the clock is unused
+    led = Ledger(li.RECORDS, now=lambda: "2026-11-08T00:00:00Z")
     stranded = [
         a.meta["id"]
         for a in (Artifact.load(p) for p in led._all_paths())
         if a.meta.get("status") == "in_review"
-        and not (ROOT / ".reviews" / f"{a.meta['id']}.md").exists()
+        and not (li.RECORDS / ".reviews" / f"{a.meta['id']}.md").exists()
     ]
     assert stranded == [], (
         "in_review with no critique sidecar — demoted by status(), not reviewed: "

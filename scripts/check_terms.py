@@ -31,11 +31,11 @@ for _stream in (sys.stdout, sys.stderr):
 PROSE = (".md",)
 
 #: 그때 그 말로 쓰인 기록물 — 손대지 않으므로 검사도 하지 않는다.
-ARCHIVAL_PREFIXES = ("specs/", ".reviews/", "adr/", ".superpowers/")
+ARCHIVAL_PREFIXES = ("records/specs/", "records/.reviews/", "records/adr/", ".superpowers/")
 ARCHIVAL_FILES = (
     # 승인된 SPEC 의 제목을 그대로 옮긴 등록부다. 게다가 `arbiter/.../ledger.py` 가 **생성**하므로
     # 손으로 고쳐도 다음 실행에 덮인다 — 여기 말은 그 SPEC 들의 것이다.
-    "INDEX.md",
+    "records/INDEX.md",
 )
 # ⚠ 공개 엔지니어링 로그는 여기 **없다.** 한때 있었고, 2026-08-27 에 걷어냈다:
 # 「기록물은 그대로」 규칙의 기제는 둘인데(승인 문서는 고치면 도장이 깨진다 · 결정 기록은

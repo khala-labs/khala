@@ -35,7 +35,7 @@ SKIP_PREFIX = ("nexus/tests/eval/ko/corpus",)
 #: 철회 원장은 도장이 걸려 있다. 사전과 검사기는 그 말을 이름으로 들고 있어야 한다.
 FROZEN = (
     "nexus/tests/eval/",          # 라벨·질문·워크시트 데이터
-    "specs/retractions.yaml",     # 서명된 철회 원장
+    "records/specs/retractions.yaml",     # 서명된 철회 원장
     "scripts/check_terms.py",
     "scripts/_terms_code_scan.py",
     "tests/test_check_terms.py",
