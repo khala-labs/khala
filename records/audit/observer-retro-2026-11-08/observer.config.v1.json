@@ -1,0 +1,53 @@
+{
+  "platform": "custom",
+  "customProfile": {
+    "name": "khala-monorepo-v1",
+    "fileRoles": [
+      { "pattern": "nexus/nexus/web/**", "role": "nexus-web" },
+      { "pattern": "nexus/nexus/**", "role": "nexus-core" },
+      { "pattern": "nexus/tests/**", "role": "nexus-test" },
+      { "pattern": "nexus/scripts/**", "role": "nexus-script" },
+      { "pattern": "nexus/migrations/**", "role": "nexus-migration" },
+      { "pattern": "nexus/docs/**", "role": "nexus-doc" },
+      { "pattern": "nexus/**", "role": "nexus-config" },
+      { "pattern": "arbiter/**", "role": "tool-arbiter" },
+      { "pattern": "observer/**", "role": "tool-observer" },
+      { "pattern": "probe/**", "role": "tool-probe" },
+      { "pattern": "adept/**", "role": "tool-adept" },
+      { "pattern": "adept-web/**", "role": "tool-adept" },
+      { "pattern": "docs/**", "role": "site-doc" },
+      { "pattern": "specs/**", "role": "record" },
+      { "pattern": "adr/**", "role": "record" },
+      { "pattern": ".reviews/**", "role": "record" },
+      { "pattern": "research/**", "role": "record" },
+      { "pattern": "audit/**", "role": "record" },
+      { "pattern": "plans/**", "role": "record" },
+      { "pattern": "governance/**", "role": "record" },
+      { "pattern": "scripts/**", "role": "guard-script" },
+      { "pattern": "tests/**", "role": "root-test" },
+      { "pattern": ".github/**", "role": "ci" },
+      { "pattern": "*.md", "role": "root-doc" },
+      { "pattern": "**", "role": "other" }
+    ],
+    "cohesionGroups": [
+      { "name": "nexus-change", "description": "one Nexus change with its tests, docs and migration", "roles": ["nexus-core","nexus-test","nexus-script","nexus-migration","nexus-doc","nexus-config","nexus-web"], "cohesionKey": "nexus", "maxFiles": 15 },
+      { "name": "tool-change", "description": "a change inside one non-Nexus tool", "roles": ["tool-arbiter","tool-observer","tool-probe","tool-adept"], "cohesionKey": "tool", "maxFiles": 15 },
+      { "name": "record-change", "description": "ADR/SPEC/review/research records", "roles": ["record"], "cohesionKey": "record", "maxFiles": 20 },
+      { "name": "docs-change", "description": "docs site and root prose", "roles": ["site-doc","root-doc"], "cohesionKey": "docs", "maxFiles": 20 },
+      { "name": "guard-change", "description": "repo-wide guard scripts, root tests, CI", "roles": ["guard-script","root-test","ci"], "cohesionKey": "guard", "maxFiles": 10 }
+    ],
+    "thresholds": {
+      "maxFilesPerPr": 15,
+      "maxDiffLinesPerPr": 600,
+      "maxCohesionGroups": 2,
+      "mixedConcerns": [
+        { "roles": ["nexus-core", "tool-arbiter"], "reason": "Nexus code and Arbiter code are separate tools; split the PR" },
+        { "roles": ["nexus-core", "tool-observer"], "reason": "Nexus code and Observer code are separate tools; split the PR" },
+        { "roles": ["nexus-core", "tool-probe"], "reason": "Nexus code and Probe code are separate tools; split the PR" },
+        { "roles": ["nexus-core", "tool-adept"], "reason": "Nexus code and Adept code are separate tools; split the PR" },
+        { "roles": ["record", "nexus-core"], "reason": "a SPEC/ADR change and the code implementing it travel in different PRs (the gate approves the spec first)" },
+        { "roles": ["guard-script", "nexus-core"], "reason": "repo-wide guard changes and product code changes are separate concerns" }
+      ]
+    }
+  }
+}
