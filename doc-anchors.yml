@@ -104,13 +104,6 @@ docs:
       - nexus/nexus/index/bm25.py
       - nexus/nexus/providers/embedding.py
 
-  - doc: docs/src/content/docs/tools/arbiter.md
-    sources: &arbiter_public
-      - arbiter/src
-
-  - doc: docs/src/content/docs/ko/tools/arbiter.md
-    sources: *arbiter_public
-
   # 답변 채점 규칙은 **채점기를 서술하는 문서**다 — 그것이 무엇을 통과시키는지가 여기 적혀 있고,
   # 규칙이 코드에서 움직이면 이 문서가 먼저 거짓말을 한다. 1판이 정확히 그렇게 낡았다:
   # "부분일치로 본다" 는 서술은 맞았지만 그 서술이 가리키는 한계를 아무도 안 읽었다.

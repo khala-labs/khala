@@ -15,7 +15,6 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "arbiter" / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
 from khala.arbiter.hashing import content_hash  # noqa: E402
@@ -392,3 +391,27 @@ def test_the_stamp_sees_every_non_whitespace_change_in_the_boundary_set():
     for label, changed in mutations.items():
         assert changed != BODY, f"{label}: the mutation is a no-op — a control that cannot fail"
         assert content_hash(changed) != base, f"{label} slipped past the stamp"
+
+
+# ── the one arbiter test that ran over the real ledger, moved here ─────────────
+# It lived in arbiter/tests/test_status_read_only.py and found the ledger by walking
+# up from its own file. Since arbiter left this repository (2026-11-08) that walk
+# lands outside any checkout and the test skips everywhere — a skipped test is no
+# test. The ledger is here, so the check is here.
+
+def test_every_in_review_artifact_in_this_repo_has_a_sidecar():
+    """An in_review artifact with no critique sidecar was demoted by status(), not reviewed."""
+    from khala.arbiter.artifacts import Artifact
+    from khala.arbiter.ledger import Ledger
+
+    led = Ledger(ROOT, now=lambda: "2026-11-08T00:00:00Z")  # read-only here; the clock is unused
+    stranded = [
+        a.meta["id"]
+        for a in (Artifact.load(p) for p in led._all_paths())
+        if a.meta.get("status") == "in_review"
+        and not (ROOT / ".reviews" / f"{a.meta['id']}.md").exists()
+    ]
+    assert stranded == [], (
+        "in_review with no critique sidecar — demoted by status(), not reviewed: "
+        + ", ".join(stranded)
+    )

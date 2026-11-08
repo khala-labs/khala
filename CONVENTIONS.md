@@ -54,7 +54,7 @@ is stamped. `GLOSSARY.md` lists what is frozen and why.
 
 ## Naming
 
-- **A lowercase top-level directory is a tool.** `nexus/`, `arbiter/`, `docs/`.
+- **A lowercase top-level directory is a tool.** `nexus/`, `docs/`.
   The directory name is the tool's canonical
   name. Adding a tool means adding a lowercase directory and a row in the
   README tool map. (Exception: shared non-tool directories such as `assets/`
