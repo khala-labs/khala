@@ -3,7 +3,7 @@ import { getCollection } from 'astro:content';
 
 // Served at /khala/llms.txt — a curated index of the English docs for LLMs,
 // following the llms.txt convention. Generated at build time (no plugin).
-const SITE = 'https://livinglikekrillin.github.io/khala';
+const SITE = 'https://khala-labs.github.io/khala';
 
 // A sensible reading order; anything not listed sorts after, alphabetically.
 const ORDER = [
