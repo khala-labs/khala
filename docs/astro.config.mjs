@@ -72,7 +72,7 @@ function rehypeMermaidPre() {
 
 export default defineConfig({
   // GitHub Pages project site: served under /khala/ (see BASE above).
-  site: 'https://livinglikekrillin.github.io',
+  site: 'https://khala-labs.github.io',
   base: BASE,
   // Component rename (ADR-0005): old tool slugs redirect to new ones.
   // NOTE: /tools/probe is intentionally NOT redirected — that slug is now a LIVE

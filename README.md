@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="README.en.md"><strong>English Documentation (Overview)</strong></a> ·
-  <a href="https://livinglikekrillin.github.io/khala/"><strong>공식 문서 사이트</strong></a> ·
+  <a href="https://khala-labs.github.io/khala/"><strong>공식 문서 사이트</strong></a> ·
   <a href="docs/glossary.md"><strong>표준 용어집</strong></a>
 </p>
 
@@ -128,14 +128,14 @@ task models    # 또는: docker compose -f nexus/docker-compose.yml exec nexus-o
 
 전체 리포지토리에는 3,455 test functions가 선언되어 있고 17 CI jobs 파이프라인에서 지속 검증되며, 실제 마이그레이션이 적용된 PostgreSQL 환경에서 테스트를 실행합니다. 또한 아키텍처 의사결정 거버넌스 아티팩트(10 ADRs, 54 SPECs) 중 승인·수용 상태의 61건은 SHA-256 무결성 해시로 스탬프되어 CI 파이프라인에서 변조 여부를 지속 검증합니다. 이 네 가지 수치는 매 푸시마다 `scripts/check_readme_counts.py`에 의해 결정론적으로 검증됩니다.
 
-- **[→ 엔지니어링 로그 (Engineering Log)](https://livinglikekrillin.github.io/khala/ko/engineering-log/)**: 시스템이 겪은 결함, 이를 포착한 계층, 그리고 아키텍처 개선 이력을 투명하게 기록한 분석 로그입니다.
+- **[→ 엔지니어링 로그 (Engineering Log)](https://khala-labs.github.io/khala/ko/engineering-log/)**: 시스템이 겪은 결함, 이를 포착한 계층, 그리고 아키텍처 개선 이력을 투명하게 기록한 분석 로그입니다.
 - **[→ 열린 항목 (OPEN.md)](./OPEN.md)**: 미해결 과제를 상태머신 원장으로 집계하여 관리합니다.
 
 ---
 
 ## 리소스 및 기여 안내
 
-- **상세 기술 문서 사이트**: [https://livinglikekrillin.github.io/khala/](https://livinglikekrillin.github.io/khala/) (소스: [`./docs`](./docs))
+- **상세 기술 문서 사이트**: [https://khala-labs.github.io/khala/](https://khala-labs.github.io/khala/) (소스: [`./docs`](./docs))
 - **기여 가이드 및 컨벤션**: [CONVENTIONS.md](./CONVENTIONS.md)
 - **도메인 표준 용어집**: [docs/glossary.md](docs/glossary.md) 및 [GLOSSARY.md](./GLOSSARY.md)
 - **라이선스**: [MIT License](./LICENSE)
