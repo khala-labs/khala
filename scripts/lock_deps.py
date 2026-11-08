@@ -35,22 +35,19 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PROJECTS: dict[str, list[str]] = {
     "nexus": ["dev", "mcp", "a2a", "slack", "notion"],
     "arbiter": ["dev"],
-    "probe": ["dev"],
-    "adept": ["dev", "postgres"],
-    "adept-web/api": ["dev"],
 }
 
-# uv emits path dependencies as editable requirements (`-e ../../adept`). pip refuses
+# uv emits path dependencies as editable requirements (`-e ../other`). pip refuses
 # editable entries in a constraints file, so they are stripped and replaced with a note.
 # The path dependency is installed explicitly by CI and pinned by its own constraints file.
 # Requirements satisfied by another subproject in this repo rather than by PyPI. They are
 # installed editable from a path and pinned by that subproject's own constraints file.
-PATH_DEPENDENCIES = {"khala-adept"}
+PATH_DEPENDENCIES: set[str] = set()
 
 EDITABLE_NOTE = (
     "# Editable path dependencies that uv emitted here are stripped by scripts/lock_deps.py:\n"
     "# pip rejects editable entries in a constraints file. They are installed explicitly\n"
-    "# (e.g. `pip install -e ../../adept -e .`) and pinned by their own constraints.txt.\n"
+    "# (e.g. `pip install -e ../other -e .`) and pinned by their own constraints.txt.\n"
 )
 
 

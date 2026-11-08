@@ -3,6 +3,10 @@ title: Observer
 description: Platform-aware PR analyzer and API contract validator; grounds review in cohesion, backward compatibility, and org guidelines.
 ---
 
+:::note[Status]
+On 2026-11-08, the code for Observer was moved to its own repository under `https://github.com/khala-labs/observer` and is kept read-only as a record of the experiment, and this page is kept as the reference.
+:::
+
 Observer grounds the review of a change in context a reviewer would otherwise have to hold in their head. It's a **platform-aware PR analyzer and API contract validator** that turns three recurring review questions into deterministic checks:
 
 1. **Is this PR's scope appropriate?** The same seven files can be one cohesive change in Spring Boot and three separate concerns in Next.js. Judging by file count misfires; Observer judges by *logical cohesion* against a platform profile.

@@ -148,12 +148,10 @@ tasks:
 
   # ---- aggregate ----------------------------------------------------------
   test:
-    desc: Run all subproject test suites (nexus, observer, arbiter, probe, docs)
+    desc: Run all subproject test suites (nexus, arbiter, docs)
     cmds:
       - task: test:nexus
-      - task: test:observer
       - task: test:arbiter
-      - task: test:probe
       - task: test:docs
 
   build:
@@ -202,23 +200,9 @@ tasks:
       - pip install -e ".[dev,mcp]" -c constraints.txt
       - python -m pytest -q -m "not integration"
 
-  test:observer:
-    desc: observer tests (vitest)
-    dir: observer
-    cmds:
-      - pnpm install --frozen-lockfile
-      - pnpm test:run
-
   test:arbiter:
     desc: arbiter tests (pytest)
     dir: arbiter
-    cmds:
-      - pip install -e ".[dev]" -c constraints.txt
-      - python -m pytest -q
-
-  test:probe:
-    desc: probe tests (pytest)
-    dir: probe
     cmds:
       - pip install -e ".[dev]" -c constraints.txt
       - python -m pytest -q
