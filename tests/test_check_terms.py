@@ -122,7 +122,7 @@ def test_an_english_term_is_caught_regardless_of_case():
 def test_the_generated_spec_register_is_archival():
     """`INDEX.md` 는 승인 SPEC 의 제목을 옮긴 등록부이고 `arbiter` 가 **생성**한다 —
     손으로 고쳐도 다음 실행에 덮이고, 그 말은 그 SPEC 들의 것이다."""
-    assert check_terms.is_archival("INDEX.md")
+    assert check_terms.is_archival("records/INDEX.md")
 
 
 def test_a_hyphenated_or_suffixed_name_is_an_identifier_not_prose():
@@ -150,9 +150,9 @@ def test_archival_paths_are_exempt():
     line = "이 자가 통과시켰다"
     banned = {"자": "평가 하니스"}
     for path in (
-        "specs/SPEC-nexus-answer-quality-ruler.md",
-        "adr/ADR-0010-x.md",
-        ".reviews/SPEC-x.md",
+        "records/specs/SPEC-nexus-answer-quality-ruler.md",
+        "records/adr/ADR-0010-x.md",
+        "records/.reviews/SPEC-x.md",
         "nexus/tests/eval/reports/2026-08-04-ann-vs-exact.md",
     ):
         assert check_terms.check_line(path, line, banned) == [], path

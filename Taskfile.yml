@@ -126,7 +126,7 @@ tasks:
       - rm -rf .self-docs && mkdir -p .self-docs
       - defer: rm -rf .self-docs
       - cp ../docs/src/content/docs/ko/philosophy.md .self-docs/khala-philosophy.md
-      - cp ../adr/ADR-0005-component-naming-rename-and-forward-mapping.md .self-docs/khala-component-naming.md
+      - cp ../records/adr/ADR-0005-component-naming-rename-and-forward-mapping.md .self-docs/khala-component-naming.md
       - docker compose -f docker-compose.yml exec -T nexus-app python -m nexus.cli ingest /app/.self-docs --tenant "{{.TENANT}}"
 
   # 에이전트가 조직 지식을 꺼내는 문. **이 문은 두 달간 0회 쓰였다** — 없어서가 아니라

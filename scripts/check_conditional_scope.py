@@ -25,7 +25,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-SPECS = ROOT / "specs"
+SPECS = ROOT / "records" / "specs"
 OPEN_MD = ROOT / "OPEN.md"
 
 #: 미해결 절의 제목. 서식이 셋인 것은 사실이고, 하나로 통일하려면 얼어 있는 본문을 고쳐야 한다.

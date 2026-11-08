@@ -136,7 +136,7 @@ sometimes proves one conclusion inside it wrong. The document does not become
 un-approved for that — what is wrong is a claim, not the decision — so the claim is
 **retracted from outside the body**.
 
-1. Add an entry to [`specs/retractions.yaml`](./specs/retractions.yaml): `target`,
+1. Add an entry to [`specs/retractions.yaml`](./records/specs/retractions.yaml): `target`,
    `retracted_by` (the SPEC or ADR that overturns it), `signed_by`, `signed_at`, the
    `quote` of the sentence being withdrawn, and `why`.
 2. Add `retractions: [<retracted_by>]` to the target's **frontmatter**. Frontmatter is

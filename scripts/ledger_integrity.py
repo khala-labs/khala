@@ -25,10 +25,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+#: The ledger root. Arbiter writes specs/, adr/, .reviews/ and INDEX.md as siblings under
+#: one directory (its `ARBITER_DOCS`); since 2026-11-08 that directory is `records/`.
+RECORDS = ROOT / "records"
 from khala.arbiter.artifacts import Artifact  # noqa: E402
 
 STAMPED = {"approved", "accepted"}
-DEFAULT_MANIFEST = ROOT / "governance" / "integrity-manifest.txt"
+DEFAULT_MANIFEST = RECORDS / "governance" / "integrity-manifest.txt"
 
 
 def _artifacts(root: Path):
@@ -81,7 +84,7 @@ def check(root: Path, manifest_path: Path) -> tuple[int, list[str], list[str], l
     return checked, mismatches, skipped, manifest_failures
 
 
-OPEN_ITEMS = ROOT / "governance" / "open-items.yaml"
+OPEN_ITEMS = RECORDS / "governance" / "open-items.yaml"
 # `trigger` is required of an OPEN item and forbidden on a closed one: an item is either open with
 # something observable to watch for, or closed with a record of how. Requiring it of both was the
 # original shape, and it forced a contradiction - a closed row had to keep saying what to watch.
@@ -151,7 +154,7 @@ def check_open_items(root: Path, path: Path | None = None) -> list[str]:
     return problems
 
 
-RETRACTIONS = ROOT / "specs" / "retractions.yaml"
+RETRACTIONS = RECORDS / "specs" / "retractions.yaml"
 _RETRACTION_REQUIRED = {"target", "retracted_by", "signed_by", "signed_at", "quote", "why"}
 
 
@@ -247,7 +250,7 @@ def check_retractions(root: Path, path: Path | None = None) -> list[str]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--root", type=Path, default=ROOT)
+    ap.add_argument("--root", type=Path, default=RECORDS)
     ap.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     ap.add_argument("--write-manifest", action="store_true",
                     help="rewrite the manifest from what is currently selected")

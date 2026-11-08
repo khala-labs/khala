@@ -25,7 +25,7 @@ import pytest
 import yaml
 
 ROOT = Path(__file__).resolve().parents[2]
-SPECS = ROOT / "specs"
+SPECS = ROOT / "records" / "specs"
 DEBT = SPECS / "backstop-debt.yaml"
 
 #: 기록 형식이 정해진 날 (`SPEC-nexus-retrieval-backstop-detector`). 그 전 SPEC 에는 소급하지

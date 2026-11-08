@@ -59,8 +59,8 @@ def counts() -> dict[str, int]:
     return {
         "tests": _test_functions(),
         "ci_jobs": len(re.findall(r"^  [a-z0-9-]+:$", ci, re.M)),
-        "adrs": len(list((ROOT / "adr").glob("ADR-*.md"))),
-        "specs": len(list((ROOT / "specs").glob("SPEC-*.md"))),
+        "adrs": len(list((ROOT / "records" / "adr").glob("ADR-*.md"))),
+        "specs": len(list((ROOT / "records" / "specs").glob("SPEC-*.md"))),
     }
 
 

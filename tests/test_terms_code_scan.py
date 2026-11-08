@@ -28,7 +28,7 @@ def test_evaluation_labels_and_signed_ledgers_are_frozen():
         "nexus/tests/eval/ko/answer-labels.yaml",
         "nexus/tests/eval/local/policy-labels.yaml",
         "nexus/tests/eval/ko/multiturn-threads.yaml",
-        "specs/retractions.yaml",
+        "records/specs/retractions.yaml",
     ):
         assert scan.frozen(path), path
 

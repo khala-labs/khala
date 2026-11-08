@@ -63,7 +63,7 @@ As AI becomes the producer, three debts accumulate:
 - **Cognitive debt** — *nobody fully understands the system* → **Adept** measures it as vouch
   coverage against the shared substrate, and drives its repayment.
 
-The reframe is recorded in [ADR-0002](adr/ADR-0002-reframe-system-command-debt.md).
+The reframe is recorded in [ADR-0002](records/adr/ADR-0002-reframe-system-command-debt.md).
 
 ## The tools
 
