@@ -125,7 +125,7 @@ Docker Compose 환경에서 실행됩니다. 기본 프로파일은 PostgreSQL, 
 
 ```bash
 # 1. 환경 설정
-git clone https://github.com/LivingLikeKrillin/khala.git
+git clone https://github.com/khala-labs/khala.git
 cd khala
 cp nexus/.env.example nexus/.env
 

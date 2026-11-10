@@ -57,7 +57,7 @@ Observer is a TypeScript / Node ≥ 20 package; pnpm is the package manager. CLI
 Observer is **not published to npm**. Build it from the monorepo — `dist/` is not committed.
 
 ```bash
-git clone https://github.com/LivingLikeKrillin/khala.git
+git clone https://github.com/khala-labs/khala.git
 cd khala/observer
 pnpm install
 pnpm build                    # tsup → dist/
@@ -137,7 +137,7 @@ The MCP server exposes eight tools, including `observer.analyzeScope`, `observer
 
 ## Reference
 
-- Source: [`observer/` in the Khala monorepo](https://github.com/LivingLikeKrillin/khala/tree/master/observer) (`README.md`).
+- Source: [`observer/` in the Khala monorepo](https://github.com/khala-labs/observer) (`README.md`).
 - Per-version scope docs live under the repo's `docs/` (`probe-v{N}-scope.md`); guideline docs under `docs/guidelines/`.
 - Build/test scripts (`pnpm build`, `pnpm test:run`, `pnpm typecheck`) are in `package.json`.
 

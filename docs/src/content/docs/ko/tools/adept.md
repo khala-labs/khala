@@ -67,4 +67,4 @@ adept coverage --as PERSON             # 조직 Vouch 커버리지, 미보증 �
 adept review ARTIFACT_ID --as PERSON   # 헤드리스 평가 세션 실행 (ANTHROPIC_API_KEY 필요)
 ```
 
-팀 단위 협업 및 대시보드 인터페이스는 웹 기반 UI와 공유 저장소 백엔드를 제공하는 [`adept-web`](https://github.com/LivingLikeKrillin/khala/tree/master/adept-web)을 통해 지원됩니다.
+팀 단위 협업 및 대시보드 인터페이스는 웹 기반 UI와 공유 저장소 백엔드를 제공하는 [`adept-web`](https://github.com/khala-labs/adept)을 통해 지원됩니다.

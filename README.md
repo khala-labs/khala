@@ -107,7 +107,7 @@ Nexus의 POST /search/answer 요청 처리 과정을 보여줍니다. 코드가 
 
 ```bash
 # 1. 저장소 클론 및 환경 설정
-git clone https://github.com/LivingLikeKrillin/khala.git
+git clone https://github.com/khala-labs/khala.git
 cd khala
 cp nexus/.env.example nexus/.env
 

@@ -66,7 +66,7 @@ adept review ARTIFACT_ID --as PERSON   # headless mode (needs ANTHROPIC_API_KEY)
 
 The agent-driven loop (`due` → `save-questions` → `record-attempt` → `coverage`) needs no API key — a Claude Code session supplies the cognition (question generation, grading, remediation). Only `adept review` calls the model directly.
 
-A browser + server-backed team surface lives in [`adept-web`](https://github.com/LivingLikeKrillin/khala/tree/master/adept-web) — the same meter with a shared backend (file or Postgres).
+A browser + server-backed team surface lives in [`adept-web`](https://github.com/khala-labs/adept) — the same meter with a shared backend (file or Postgres).
 
 :::note[Last verified]
 Transcribed from `adept/README.md`. Site re-run verification pending.

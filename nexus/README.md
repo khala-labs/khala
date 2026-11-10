@@ -184,7 +184,7 @@ Classification: PUBLIC < INTERNAL < RESTRICTED
 ### 1. Clone & Configure
 
 ```bash
-git clone https://github.com/LivingLikeKrillin/khala.git
+git clone https://github.com/khala-labs/khala.git
 cd khala/nexus
 
 cp .env.example .env

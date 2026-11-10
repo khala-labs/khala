@@ -135,7 +135,7 @@ Nexus runs as a Docker Compose stack. By default only the **core** containers st
 ### 1. Clone & configure
 
 ```bash
-git clone https://github.com/LivingLikeKrillin/khala.git
+git clone https://github.com/khala-labs/khala.git
 cd khala
 cp nexus/.env.example nexus/.env
 # (optional) set ANTHROPIC_API_KEY in nexus/.env for LLM answer generation
@@ -206,7 +206,7 @@ The same report is available at `GET /diff`.
 
 ## Reference
 
-- Source repo README: [github.com/LivingLikeKrillin/khala](https://github.com/LivingLikeKrillin/khala) (`README.md`)
+- Source repo README: [github.com/khala-labs/khala](https://github.com/khala-labs/khala) (`README.md`)
 - API contract, pipeline, MCP server, Slack bot, and UI integration docs live under that repo's `docs/` (`API_CONTRACT.md`, `PIPELINE_SPEC.md`, `MCP_SERVER.md`, `SLACK_BOT.md`, `UI_INTEGRATION.md`).
 - MCP server exposes nine tools — `nexus_search`, `nexus_answer`, `nexus_graph`, `nexus_suggest`, `nexus_diff`, `nexus_status`, `nexus_supersede`, `archon_claim_value`, `archon_grade_authority` — via `python -m nexus.mcp`. Set `NEXUS_MCP_TOKEN`, or every call returns 401 (auth defaults to `enforced`).
 

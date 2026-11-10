@@ -103,7 +103,7 @@ export default defineConfig({
         ko: { label: '한국어', lang: 'ko' },
       },
       social: {
-        github: 'https://github.com/LivingLikeKrillin',
+        github: 'https://github.com/khala-labs',
       },
       sidebar: [
         {
