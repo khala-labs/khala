@@ -59,7 +59,7 @@ from nexus.search.rewrite import W_ORIGINAL, W_REWRITTEN, rewrite as rewrite_que
 from nexus.search.hybrid import ROUTES as hybrid_routes
 from nexus.search.hybrid import UnknownRoute
 from nexus.search.router import determine_route
-from nexus.search.signals import JudgeInput, extract_signals, record_search
+from nexus.search.signals import extract_signals, record_search
 
 
 # 로컬 dev 온램프: ANTHROPIC_API_KEY 미설정 시, 일시적 API 오류와 구분되는 *행동지침* 안내.
@@ -946,11 +946,7 @@ async def search_answer(req: SearchAnswerRequest,
             search_text=_search_text(req),
             search_fingerprint=packet.search_fingerprint,
         )
-        # 판정자는 LLM 을 부른다 — 생성 없는 요청이 그것을 깨우면 이 필드를 둔 이유가 사라진다.
-        judge_input = None if req.evidence_only else JudgeInput(   # 답변이 받은 것과 같은 답변 근거
-            query=req.query, evidence=format_for_llm(packet),
-            config=_load_config(), llm_svc=llm_svc)
-        await record_search(sig, judge_input=judge_input,
+        await record_search(sig,
             query_text=req.query, principal=principal.name,
             rewritten_text=rw.query if (rw and rw.changed) else None,
             spans=getattr(search_result, "spans", None))
@@ -1609,9 +1605,7 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
                 search_text=_search_text(req),
                 search_fingerprint=packet.search_fingerprint,
             )
-            await record_search(sig, judge_input=JudgeInput(
-                query=req.query, evidence=evidence_text,
-                config=_load_config(), llm_svc=llm_svc) if has_answer else None,
+            await record_search(sig,
                 query_text=req.query, principal=principal.name,
             rewritten_text=rw.query if (rw and rw.changed) else None,
             spans=getattr(search_result, "spans", None))

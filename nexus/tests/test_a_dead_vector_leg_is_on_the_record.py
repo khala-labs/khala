@@ -61,7 +61,7 @@ async def _bound(monkeypatch, sig) -> tuple[dict[str, str], tuple]:
         return 1
 
     monkeypatch.setattr(S.db, "fetch_val", fake_fetch_val)
-    await S._insert(sig, None, None, None)
+    await S._insert(sig)
     cols, vals = _columns_and_values(captured["sql"])
     assert len(cols) == len(vals), "INSERT 의 칸 수와 값 수가 다르다"
     return dict(zip(cols, vals)), captured["args"]

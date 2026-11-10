@@ -233,7 +233,7 @@ def test_evidence_only_is_recorded_apart_from_answers_and_wakes_no_judge(client,
         return object()
 
     async def _record(sig, **kw):
-        seen["judge_input"] = kw.get("judge_input")
+        seen["recorded"] = True
 
     monkeypatch.setattr(api, "extract_signals", _signals)
     monkeypatch.setattr(api, "record_search", _record)
@@ -242,7 +242,7 @@ def test_evidence_only_is_recorded_apart_from_answers_and_wakes_no_judge(client,
 
     assert seen["path"] == "search_answer_evidence"
     assert seen["answer"] is None, "답이 없는데 답의 칸을 기록하면 0 이 적힌다"
-    assert seen["judge_input"] is None, "생성 없는 요청이 판정자(LLM)를 깨웠다"
+    assert seen["recorded"], "생성 없는 요청도 검색 행은 남긴다"
     assert seen["prompt_version"], "묶음을 만든 코드의 판은 그대로 남아야 한다"
 
 

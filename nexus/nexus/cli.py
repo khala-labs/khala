@@ -378,7 +378,7 @@ def query(
             typer.echo(answer_result.answer)
             typer.echo(f"\n({answer_result.timing_ms.get('llm_ms', '?')}ms)")
 
-        from nexus.search.signals import JudgeInput, extract_signals, record_search
+        from nexus.search.signals import extract_signals, record_search
         sig = extract_signals(
             result, answer_result, path="cli",
             # 답변 근거 점유율은 패킷에서 센다 (§5.3). 답변을 안 만든 실행에는 패킷이 없고,
@@ -388,16 +388,10 @@ def query(
             n_entities=len(entity_rids),
             latency_ms=int((time.time() - _t0) * 1000),
         )
-        # await_persist=True: close_pool 이전에 적재 완료 — CLI 는 판정도 기다린다(설계).
-        # 답변을 만들지 않았으면 판정할 답변 근거도 없다(packet/llm_svc 는 그 블록 안에서만 산다).
-        _ji = None
-        if answer_result is not None:
-            from nexus.search.evidence_packet import format_for_llm
-            _ji = JudgeInput(query=q, evidence=format_for_llm(packet),
-                             config=config, llm_svc=llm_svc)
+        # await_persist=True: close_pool 이전에 적재 완료.
         # CLI 는 principal 이 없다 — 허용목록에 오를 수 없으므로 보존되지 않는다.
         # 도구 트래픽이 '실사용 질문' 집합을 오염시키면 이 기능의 목적이 무너진다.
-        await record_search(sig, await_persist=True, judge_input=_ji, query_text=q,
+        await record_search(sig, await_persist=True, query_text=q,
                             spans=getattr(result, "spans", None))
         await db.close_pool()
 

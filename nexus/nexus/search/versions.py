@@ -34,14 +34,15 @@ def _digest(parts: Iterable[str]) -> str:
 def search_fingerprint(config: dict | None) -> str:
     """검색 핑거프린트 — 임베딩 컬럼 · 모델 · 토크나이저 + **`search` 설정 절 전체**.
 
-    ⛔ **목록이 아니라 절 전체를 본다.** 먼저 있던 검색 스택 핑거프린트(`signals.evidence_fingerprint`,
-    충분성 판정자 전용)은 일곱 값을 골라 적었고, 그 뒤에 생긴 보강 설정(정정 확인 패스 · 페어 확장 ·
+    ⛔ **목록이 아니라 절 전체를 본다.** 먼저 있던 검색 스택 핑거프린트(`evidence_fingerprint`,
+    충분성 판정자 전용 — 2026-11-10 에 migration 052 로 내렸다)는 일곱 값을 골라 적었고,
+    그 뒤에 생긴 보강 설정(정정 확인 패스 · 페어 확장 ·
     참조 필 · 코드 값)은 거기 없다. 목록을 사람이 적는 한 같은 일이 난다 — `prompt_version` 의
     첫 버전이 똑같이 낡았다. 절 전체면 내일 생길 설정도 오늘 이미 들어간다.
 
     ⚠ `search` 밖의 절은 안 넣는다. 신선도 TTL 같은 설정까지 넣으면 버전이 검색과 무관하게 바뀌어
     경계가 뜻을 잃는다. 임베딩 컬럼은 env 가 덮을 수 있으므로 설정 파일이 아니라
-    `configured_column()` 에서 읽는다(`evidence_fingerprint` 와 같은 이유).
+    `configured_column()` 에서 읽는다 — 파일을 읽으면 컷오버한 배포에서 틀린 세대를 적는다.
     """
     from nexus.index.bm25 import active_tokenizer
     from nexus.index.vector_index import configured_column

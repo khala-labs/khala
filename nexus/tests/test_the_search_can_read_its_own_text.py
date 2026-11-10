@@ -160,7 +160,6 @@ def client(monkeypatch):
         return object()
 
     async def _record(sig, **kw):
-        _SEEN["judge_query"] = getattr(kw.get("judge_input"), "query", None)
         _SEEN["retained"] = kw.get("query_text")
 
     monkeypatch.setattr(api, "_load_config", lambda *a, **k: {})
@@ -200,7 +199,6 @@ def test_search_reads_the_search_text_and_the_answer_reads_the_question(client):
     assert _SEEN["packet_question"] == SEARCH
     assert _SEEN["generate"] == (QUESTION, QUESTION), \
         "질문 자리에 검색 글이 새면 프롬프트가 「두 문장」 모양으로 바뀐다"
-    assert _SEEN["judge_query"] == QUESTION
     assert _SEEN["retained"] == QUESTION, "질문 원문 보존은 질문이다 — 호출자가 쓴 검색 글이 아니다"
     assert data["search_text_len"] == len(SEARCH)
 

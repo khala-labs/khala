@@ -104,7 +104,11 @@ def test_the_script_exits_zero_today_and_nonzero_on_the_day():
     ok = subprocess.run([sys.executable, "scripts/check_dated_triggers.py"],
                         cwd=str(ROOT), capture_output=True)
     assert ok.returncode == 0, ok.stdout.decode("utf-8", "replace")
+    # 날짜를 박지 않는다 — 박으면 그 트리거를 처분하는 날 이 검사가 거꾸로 붉어진다
+    # (2026-11-10 실측).
+    # 선언된 것 중 가장 이른 날을 그날로 삼는다: 어떤 트리거가 남아 있든 그날엔 울려야 한다.
+    earliest = min(when for _, when, _ in declared((ROOT / "OPEN.md").read_text(encoding="utf-8")))
     then = subprocess.run(
-        [sys.executable, "scripts/check_dated_triggers.py", "--today", "2026-11-10"],
+        [sys.executable, "scripts/check_dated_triggers.py", "--today", earliest.isoformat()],
         cwd=str(ROOT), capture_output=True)
     assert then.returncode == 1, then.stdout.decode("utf-8", "replace")

@@ -149,8 +149,8 @@ _EXCLUDE_ANSWER_DERIVED = {
     "n_citations", "unverified_citations",
 }
 #: 행 식별 정보·벽시계 필드 — 캡처 여부와 무관하게 매 실행 다르다. 작업 지시문의 목록에는 없지만
-#: 빼지 않으면 `id`/`ts`/`sufficiency_at` 하나만으로 모든 실행이 "달라졌다" 고 나온다.
-_EXCLUDE_STRUCTURAL = {"id", "ts", "sufficiency_at", "path"}
+#: 빼지 않으면 `id`/`ts` 하나만으로 모든 실행이 "달라졌다" 고 나온다.
+_EXCLUDE_STRUCTURAL = {"id", "ts", "path"}
 
 
 @pytest.mark.integration
