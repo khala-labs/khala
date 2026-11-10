@@ -5,7 +5,7 @@ description: A dated record of what this system got wrong, how each defect surfa
 
 *Most project histories list what was shipped. This one lists what was **wrong** — because in a system whose whole promise is calibration, the interesting events are the ones where the system, or its measurements, turned out to be lying.*
 
-This page is safe to hand-write, which most of the documentation here is not. Everything else in this repository describes the code as it is now, so it rots the moment the code moves — which is why those pages are [anchored to the sources they describe](https://github.com/LivingLikeKrillin/khala/blob/master/doc-anchors.yml) and checked on every push. A dated record is different. It says what was true on a day, and days do not change.
+This page is safe to hand-write, which most of the documentation here is not. Everything else in this repository describes the code as it is now, so it rots the moment the code moves — which is why those pages are [anchored to the sources they describe](https://github.com/khala-labs/khala/blob/master/doc-anchors.yml) and checked on every push. A dated record is different. It says what was true on a day, and days do not change.
 
 ## Who caught what
 
@@ -224,7 +224,7 @@ Wiring it surfaced a latent failure worth recording. Passing the new argument un
 
 **The instrument was wrong more often than the system.** That is not a complaint about the instrument; it is the reason the instrument is treated as a first-class artifact here, with signed labels, pre-registered verdict rules, and a standing prohibition on editing a grader after seeing the score it produced. The sharpest case is the most recent: a grader that read a perfect score and could not see the change it had been written to evaluate, and an entropy signal that was counting our own re-ingests one day after being repaired for a different contamination. Both were found by checking a claim against the thing it describes, which is cheap and is now done on a schedule rather than when something feels wrong.
 
-*This page is a record, not a status board. For what is currently open, see [OPEN.md](https://github.com/LivingLikeKrillin/khala/blob/master/OPEN.md), which counts unresolved items so that it is possible to tell whether they are going up or down.*
+*This page is a record, not a status board. For what is currently open, see [OPEN.md](https://github.com/khala-labs/khala/blob/master/OPEN.md), which counts unresolved items so that it is possible to tell whether they are going up or down.*
 
 ### The harness was measuring a path no user takes
 

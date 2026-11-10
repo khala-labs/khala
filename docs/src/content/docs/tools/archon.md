@@ -52,7 +52,7 @@ Archon is the `nexus/claims/` package inside the Nexus repo, on `master`. It reu
 ### 1. Bring up Nexus
 
 ```bash
-git clone https://github.com/LivingLikeKrillin/khala.git
+git clone https://github.com/khala-labs/khala.git
 cd khala
 task up          # starts containers, runs DB migrations, pulls the model (see the Nexus quickstart for the no-Task path)
 ```
@@ -106,7 +106,7 @@ Archon exposes MCP tools so agents answer domain questions from the governed sou
 
 ## Reference
 
-- Repo: [github.com/LivingLikeKrillin/khala](https://github.com/LivingLikeKrillin/khala), branch `master`.
+- Repo: [github.com/khala-labs/khala](https://github.com/khala-labs/khala), branch `master`.
 - Package: `nexus/claims/` (`seed.py`, `value_query.py`, `grade_authority.py`, `answer.py`, `repository.py`). CLI in `nexus/cli.py`; HTTP in `nexus/api.py`; MCP tools in `nexus/mcp/server.py`.
 
 :::note[Last verified]

@@ -10,7 +10,7 @@ New here? Start from what you're trying to do — each goal points to the tool t
 Docker is the only thing you need installed. Everything else runs inside the compose stack.
 
 ```bash
-git clone https://github.com/LivingLikeKrillin/khala.git
+git clone https://github.com/khala-labs/khala.git
 cd khala
 cp nexus/.env.example nexus/.env     # then set ANTHROPIC_API_KEY for narrated answers
 task up

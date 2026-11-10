@@ -20,7 +20,7 @@ description: 엔지니어링 목표별 도구 매핑 및 빠른 실행 가이드
 Docker 환경만 설치되어 있으면 로컬 인프라(Postgres, Ollama, App)가 컨테이너 스택 내에서 자동 구성됩니다.
 
 ```bash
-git clone https://github.com/LivingLikeKrillin/khala.git
+git clone https://github.com/khala-labs/khala.git
 cd khala
 cp nexus/.env.example nexus/.env     # LLM 답변 생성을 위한 ANTHROPIC_API_KEY 설정 (선택 사항)
 task up
