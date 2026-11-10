@@ -123,7 +123,7 @@ def wired(monkeypatch):
     from nexus.search.hybrid import SearchResult
 
     monkeypatch.setenv("NEXUS_DEV_TOKEN", _TOKEN)
-    seen: dict = {"search": [], "rows": [], "judge": [], "query_text": []}
+    seen: dict = {"search": [], "rows": [], "query_text": []}
 
     async def _noop_async(*a, **k):
         return None
@@ -139,9 +139,8 @@ def wired(monkeypatch):
             classification="INTERNAL", full_text="정원은 30 이다.")],
             searched_tenants=["default"], prompt_version="a1b2c3d4e5f6")
 
-    async def _record(sig, judge_input=None, **k):
+    async def _record(sig, **k):
         seen["rows"].append(sig)
-        seen["judge"].append(judge_input)
         seen["query_text"].append(k.get("query_text"))
 
     monkeypatch.setattr(api, "_load_config", lambda *a, **k: {})
@@ -206,9 +205,6 @@ def test_it_never_reaches_search_rewrite_judge_or_retention(wired, surface):
     blob = repr(seen["search"])
     assert "picking-arm-2" not in blob, "자료가 검색 인자에 들어갔다"
     assert seen["query_text"] == ["파지 실패 원인"], "보존되는 질문 원문에 자료가 섞였다"
-    for judge in seen["judge"]:
-        if judge is not None:
-            assert "picking-arm-2" not in judge.evidence and "picking-arm-2" not in judge.query
     assert "picking-arm-2" not in repr(seen["rows"]), "기록 신호에 자료 본문이 실렸다"
 
 

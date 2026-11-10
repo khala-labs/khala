@@ -352,7 +352,7 @@ async def _default_answer_fn(query: str, tenant: str, clearance: str) -> AnswerR
         confidence=search_result.confidence,
         spans=getattr(search_result, "spans", None),
     )
-    from nexus.search.signals import JudgeInput, extract_signals, record_search
+    from nexus.search.signals import extract_signals, record_search
     sig = extract_signals(
         search_result, answer_result, path="a2a",
         # 답변 근거 점유율은 패킷에서 센다 (§5.3) — 히트만 세면 필·짝·정정이 빠진다.
@@ -361,9 +361,7 @@ async def _default_answer_fn(query: str, tenant: str, clearance: str) -> AnswerR
         n_entities=len(entity_rids),
         latency_ms=int((time.time() - _t0) * 1000),
     )
-    from nexus.search.evidence_packet import format_for_llm
-    await record_search(sig, judge_input=JudgeInput(   # a2a_audit(인가)와 별개로 품질 기록
-        query=query, evidence=format_for_llm(packet), config=config, llm_svc=llm_svc),
+    await record_search(sig,   # a2a_audit(인가)와 별개로 품질 기록
         # principal 을 넘기지 않는다 — `AnswerFn` 은 주입되는 계약 `(query, tenant, clearance)`
         # 이고 여기엔 식별 정보가 오지 않는다. 허용목록에 오를 수 없으므로 A2A 질문은 보존되지
         # 않는다. **에이전트 질문이 필요 없다는 판단이 아니라, 이 API 표면이 아직 자기를 식별하지

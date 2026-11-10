@@ -110,20 +110,3 @@ async def judge(query: str, evidence: str, llm_svc) -> SufficiencyVerdict:
     except Exception:  # noqa: BLE001 — 판정자 장애가 답변 경로를 죽이면 안 된다
         return SufficiencyVerdict(Sufficiency.UNPARSEABLE)
 
-
-def judge_identity(llm_svc) -> str:
-    """`{backend}/{model}/{prompt_sha}` — 이 행을 만든 판정자.
-
-    셋 다 필요하다. **backend** 는 어느 클라이언트가 텍스트를 밖으로 날랐는지다(브리지는 키가 없을
-    뿐 로컬이 아니다 — 같은 공급자로 나간다). **prompt_sha** 는 실제로 보낸 프롬프트에서 유도한다:
-    손으로 관리하는 `v1` 은 누가 프롬프트를 고치고 잊는 순간 서로 다른 두 판정자를 한 이름 아래
-    조용히 섞는다. 시스템 프롬프트만이 아니라 사용자 템플릿 모양까지 넣는 이유도 같다.
-    """
-    import hashlib
-    import os
-
-    backend = (os.getenv("NEXUS_LLM_PROVIDER") or "anthropic").strip().lower()
-    model = getattr(llm_svc, "model", "unknown")
-    material = SYSTEM + "\x00" + build_prompt("\x01", "\x02")   # 템플릿 모양까지 포함
-    sha = hashlib.sha256(material.encode("utf-8")).hexdigest()[:8]
-    return f"{backend}/{model}/{sha}"[:128]
