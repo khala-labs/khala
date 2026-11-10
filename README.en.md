@@ -69,11 +69,11 @@ The reframe is recorded in [ADR-0002](records/adr/ADR-0002-reframe-system-comman
 
 The tools are grouped by status. The dates indicate the last functional change in this repository.
 
-### Running
+### Active
 
 | Tool | Role | Status (date) | Directory link |
 | --- | --- | --- | --- |
-| **Nexus** | Hybrid retrieval over your docs and OTel telemetry — every answer carries citations that are verified in code.<br>- **Archon** (module inside Nexus, not a separate tool): Authority window over domain invariants — reads values from code constants at query time. | Running and deployed; last change 2026-10-18 | [`./nexus`](./nexus)<br>(Archon: [`./nexus/nexus/claims`](./nexus/nexus/claims)) |
+| **Nexus** | Hybrid retrieval over your docs and OTel telemetry — every answer carries citations that are verified in code.<br>- **Archon** (module inside Nexus, not a separate tool): Authority window over domain invariants — reads values from code constants at query time. | Code under development, not deployed (as of 2026-11-11; last data is the 2026-11-10 DB dump); last code change 2026-11-10 | [`./nexus`](./nexus)<br>(Archon: [`./nexus/nexus/claims`](./nexus/nexus/claims)) |
 
 ### Instrument in use
 
