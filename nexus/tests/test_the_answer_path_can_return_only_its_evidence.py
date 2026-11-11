@@ -61,6 +61,9 @@ class _NoModel:
     버전에서 **실제로 그렇게 통과했다.** 그래서 기록을 남기고, 시험은 기록을 본다.
     """
 
+    def __init__(self, *a, **k):  # 답변 표면이 이제 `provider=` 를 넘긴다 (per-principal backend)
+        pass
+
     def __getattr__(self, name):
         _TOUCHED.append(name)
         raise AssertionError(f"근거만 요청인데 모델을 만졌다: {name}")

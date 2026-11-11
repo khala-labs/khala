@@ -114,6 +114,10 @@ class AuthConfig:
                 "tenant": "default",
                 "clearance": "INTERNAL",
                 "capabilities": list(dev_caps),
+                # 운영자 식별 정보이므로 소유자다 — 이 토큰은 env(`NEXUS_DEV_TOKEN`)로만 들어오고,
+                # Access 가 켜지면 이 경로 자체가 꺼진다(위). 기본값이 브리지인 개발 상자에서
+                # 이 표시가 없으면 기동이 거부된다(SPEC-nexus-per-principal-answer-backend §4.4).
+                "owner": True,
             }
             # 읽기 범위 — 슬랙과 **같은 잠금**을 쓴다(`_validate_read_tenants`).
             #
@@ -248,6 +252,14 @@ class AuthConfig:
         # 읽기 범위 목록은 **모드와 무관하게** 검사한다 — permissive 도 범위를 넓히면 안 된다.
         for p in self.principals:
             _validate_read_tenants(p)
+
+        # 답변 백엔드도 모드와 무관하다: 브리지로 가는 principal 은 소유자여야 하고, 기본값이
+        # 브리지이면 익명·Access 는 아예 기동을 막는다. A2A 마운트도 **같은 함수**를 부른다
+        # (SPEC-nexus-per-principal-answer-backend §4.4).
+        from nexus.providers.backend_choice import check_principal_backends
+
+        check_principal_backends(self.principals, permissive=self.permissive,
+                                 access_enabled=self.access is not None, surface="auth")
 
         if self.permissive:
             return

@@ -30,6 +30,13 @@ class Principal:
     #: ``["design_docs", "default"]`` 인 principal 을 **엉뚱한 테넌트에 적재**시킨다
     #: (SPEC §4 I-5, 크리틱 3R I-001).
     read_tenants: tuple[str, ...] = ()
+    #: 이 principal 의 답변 백엔드. ``None`` 이면 프로세스 기본값(`NEXUS_LLM_PROVIDER`)을 따른다
+    #: (SPEC-nexus-per-principal-answer-backend §4.1). 요청 본문은 이것을 고를 수 없다.
+    llm_provider: str | None = None
+    #: 구독 보유자 **본인**의 신원인가. 결정된 백엔드가 키리스 브리지인 principal 은 이것이
+    #: 참이어야 기동한다(`providers.backend_choice.check_principal_backends`). ``ANONYMOUS`` 와
+    #: Cloudflare Access 신원은 언제나 거짓이다.
+    owner: bool = False
 
     @property
     def read_scope(self) -> tuple[str, ...]:
@@ -51,6 +58,17 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def _llm_provider(entry: dict) -> str | None:
+    """The entry's backend, normalised by the same function startup validation uses.
+
+    Startup (`check_principal_backends`) already refused anything invalid, so this only
+    normalises. Imported lazily: the providers package is heavier than the auth layer.
+    """
+    from nexus.providers.backend_choice import principal_provider
+
+    return principal_provider(entry, str(entry.get("name", "unknown")))
+
+
 def resolve_principal(token: str | None, principals: list[dict]) -> Principal | None:
     """Return the matching principal, or ``None`` if the token is missing/unknown.
 
@@ -70,5 +88,7 @@ def resolve_principal(token: str | None, principals: list[dict]) -> Principal | 
                 clearance=floor_public(p.get("clearance")),
                 capabilities=tuple(str(c) for c in (p.get("capabilities") or [])),
                 read_tenants=tuple(str(t) for t in (p.get("read_tenants") or [])),
+                llm_provider=_llm_provider(p),
+                owner=p.get("owner") is True,
             )
     return None

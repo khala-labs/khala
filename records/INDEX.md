@@ -14,7 +14,7 @@
 | SPEC-nexus-screenshot-text-extraction | Read the policy that lives inside screenshots — khala absorbs the friction, the organisation does not retype its documents | LivingLikeKrillin |  | ADR-0002, ADR-0004, ADR-0006, ADR-0010 |
 | SPEC-nexus-sufficiency-signal | Record whether the evidence answered the question — a per-search verdict, off by default |  |  | ADR-0002, ADR-0006 |
 
-## 🟢 승인 (45)
+## 🟢 승인 (46)
 
 | id | title | approved_by | date | linked_adrs |
 |---|---|---|---|---|
@@ -43,6 +43,7 @@
 | SPEC-nexus-notion-connection-health | Notion connection health — is the token real, and can we actually reach that root? | LivingLikeKrillin | 2026-07-10 | ADR-0004 |
 | SPEC-nexus-notion-reconciliation | Notion deletion reconciliation — soft_delete/revive primitives + root-scoped prune | LivingLikeKrillin | 2026-07-09 | ADR-0006 |
 | SPEC-nexus-notion-source-console | Notion source console — endpoint-first source management, background sync, previewed deletion | LivingLikeKrillin | 2026-07-10 | ADR-0006 |
+| SPEC-nexus-per-principal-answer-backend | The answer backend is chosen per principal: an API key by default, the keyless bridge only for named identities | LivingLikeKrillin | 2026-11-11T17:41:05Z | ADR-0004 |
 | SPEC-nexus-ranking-precision | Ranking precision — cover-density lexical scoring and per-document diversity | LivingLikeKrillin |  | ADR-0004 |
 | SPEC-nexus-retrieval-backstop-detector | Run the hash check unattended — one small job, and the findings from two detector designs that failed | LivingLikeKrillin | 2026-08-05 | ADR-0009, ADR-0008, ADR-0002 |
 | SPEC-nexus-search-recall | BM25 recall — the keyword leg answers nothing, and `route` answers nobody | LivingLikeKrillin | 2026-07-10 | ADR-0004 |
