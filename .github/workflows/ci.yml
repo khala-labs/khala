@@ -68,6 +68,8 @@ jobs:
         run: python scripts/ledger_integrity.py
       - name: The check has teeth (negative control + read-only + manifest)
         run: python -m pytest tests/test_ledger_integrity.py -q
+      - name: The approve script writes only into records/ and refuses a missing ledger
+        run: python -m pytest tests/test_approve_script.py -q
       # This repo is public. A partner organisation's name, work email, Access tenant hostname and
       # real Notion page ids were scrubbed once on 2026-07-01 and came back within a month, in
       # test fixtures, a config comment, docs and two commit messages. Memory failed at this twice;
