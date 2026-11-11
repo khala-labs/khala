@@ -114,6 +114,9 @@ def _result() -> SearchResult:
 class _Model:
     configured = True
 
+    def __init__(self, *a, **k):  # 답변 표면이 이제 `provider=` 를 넘긴다 (per-principal backend)
+        pass
+
     async def stream(self, system_prompt, user_prompt, usage_out=None):
         _SEEN["stream_prompts"] = (system_prompt, user_prompt)
         yield "답"

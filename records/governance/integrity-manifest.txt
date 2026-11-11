@@ -45,6 +45,7 @@ SPEC-nexus-multi-turn-retrieval
 SPEC-nexus-notion-connection-health
 SPEC-nexus-notion-reconciliation
 SPEC-nexus-notion-source-console
+SPEC-nexus-per-principal-answer-backend
 SPEC-nexus-query-text-retention
 SPEC-nexus-ranking-precision
 SPEC-nexus-retrieval-backstop-detector

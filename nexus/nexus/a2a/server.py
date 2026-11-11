@@ -141,6 +141,11 @@ def mount_a2a(
     """Conditionally mount the A2A surface. No-op (no routes) when ``cfg.enabled`` is false."""
     if not cfg.enabled:
         return
+    # 같은 소유자·백엔드 규칙을 A2A principal 목록에도 건다 — `auth.principals` 와 다른 목록이라
+    # 여기서 따로 부르지 않으면 A2A 토큰만 규칙 밖에 남는다(SPEC-nexus-per-principal-answer-backend §4.4).
+    from nexus.providers.backend_choice import check_principal_backends
+
+    check_principal_backends(cfg.principals, surface="a2a")
 
     resolved_answer_fn = answer_fn or _default_answer_fn
     resolved_ingest_fn = ingest_fn or _default_ingest_fn
@@ -279,7 +284,11 @@ def mount_a2a(
         req_tenant, req_clearance = _requested_scope(params)
         tenant, clearance = effective_scope(principal, req_tenant, req_clearance)
 
-        result = resolved_answer_fn(query, tenant, clearance)
+        # 기본 답변 경로에만 principal 을 넘긴다 — 주입된 답변 함수(테스트)는 세 인자 계약 그대로다.
+        if answer_fn is None:
+            result = _default_answer_fn(query, tenant, clearance, principal=principal)
+        else:
+            result = resolved_answer_fn(query, tenant, clearance)
         if isinstance(result, Awaitable):
             result = await result
 
@@ -293,7 +302,8 @@ def mount_a2a(
         return {"jsonrpc": "2.0", "id": req_id, "result": task}
 
 
-async def _default_answer_fn(query: str, tenant: str, clearance: str) -> AnswerResult:
+async def _default_answer_fn(query: str, tenant: str, clearance: str,
+                             principal: object | None = None) -> AnswerResult:
     """Production grounded-answer path — the same pipeline behind ``POST /search/answer``.
 
     Imported lazily so the disabled surface stays import-light.
@@ -307,7 +317,7 @@ async def _default_answer_fn(query: str, tenant: str, clearance: str) -> AnswerR
     )
     from nexus.llm.answer import generate_answer
     from nexus.providers.embedding import embedding_service_from_config
-    from nexus.providers.llm import LLMService
+    from nexus.providers.llm import llm_for
     from nexus.repositories.graph import PostgresGraphRepository
     from nexus.rid import entity_rid
     from nexus.search.reconcile import packet_for_answer
@@ -327,7 +337,7 @@ async def _default_answer_fn(query: str, tenant: str, clearance: str) -> AnswerR
     _t0 = time.time()
     config = _load_config()
     embedding_svc = embedding_service_from_config(config)
-    llm_svc = LLMService()
+    llm_svc = llm_for(principal)
     pool = await db.get_pool()
     graph_repo = PostgresGraphRepository(pool)
 

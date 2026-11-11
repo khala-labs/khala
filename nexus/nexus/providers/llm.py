@@ -348,6 +348,7 @@ class LLMService:
     def __init__(
         self, model: str | None = None, api_key: str | None = None,
         pricing: dict | None = None, vision_backend: str | None = None,
+        provider: str | None = None,
     ) -> None:
         self.model = model or os.getenv("NEXUS_LLM_MODEL") or self.DEFAULT_MODEL
         self._pricing = pricing if pricing is not None else _load_pricing()
@@ -356,11 +357,26 @@ class LLMService:
         # 조용히 움직이지 않는다.
         if vision_backend == "gemini":
             self._backend = _GeminiBackend(self.model)
+            self.provider = "gemini"
             self.configured = self._backend.configured
             return
-        provider = (vision_backend or os.getenv("NEXUS_LLM_PROVIDER") or "anthropic").strip().lower()
-        if provider == "claude":
-            provider = "claude-code" if os.getenv("NEXUS_LLM_BRIDGE_URL") else "anthropic"
+        # 답변 백엔드는 principal 이 고를 수 있다(SPEC-nexus-per-principal-answer-backend §4.2).
+        # 명시 인자는 `anthropic`·`claude-code` 만 받는다 — 별칭 `claude` 는 env 에서만 산다.
+        # ``vision_backend`` 가 주어지면 그쪽이 이긴다(오늘과 같다).
+        from nexus.providers.backend_choice import (
+            ANSWER_BACKENDS, normalize_provider, resolve_env_provider)
+
+        if vision_backend:
+            provider = resolve_env_provider(vision_backend)
+        elif provider is not None:
+            provider = normalize_provider(provider)
+            if provider not in ANSWER_BACKENDS:
+                raise ValueError(
+                    f"알 수 없는 provider 인자: {provider!r} "
+                    "(기대값: 'anthropic' 또는 'claude-code')")
+        else:
+            provider = resolve_env_provider(os.getenv("NEXUS_LLM_PROVIDER"))
+        self.provider = provider
         if provider == "anthropic":
             self._backend: _AnthropicBackend | _ClaudeCodeBackend = _AnthropicBackend(
                 self.model, api_key)
@@ -429,3 +445,40 @@ class LLMService:
 
     def get_model_name(self) -> str:
         return self.model
+
+
+
+#: 답변 요청마다 남는 구조화 로그의 이름. 어느 principal 이 어느 백엔드로 답을 받았는지가
+#: 사후에 남는 유일한 증거다 — `search_log` 스키마는 바꾸지 않았다
+#: (SPEC-nexus-per-principal-answer-backend §4.5).
+BACKEND_EVENT = "llm.answer_backend"
+
+
+def log_answer_backend(principal, svc=None) -> None:
+    """이 요청이 어느 백엔드로 가는지 한 줄 남긴다.
+
+    ⛔ 백엔드는 **서비스 객체를 만지지 않고** principal 과 프로세스 기본값에서 정한다 —
+    `LLMService` 가 고르는 것과 같은 규칙(`backend_choice`)이다. 근거만 요청은 모델을 한 번도
+    만지지 않아야 하고, 그것을 시험이 기록으로 확인한다
+    (`tests/test_the_answer_path_can_return_only_its_evidence.py`). ``svc`` 는 호출부의 짝을
+    분명히 하려고 받을 뿐 읽지 않는다.
+    """
+    import structlog
+
+    from nexus.providers.backend_choice import normalize_provider, process_default
+
+    backend = normalize_provider(getattr(principal, "llm_provider", None)) or process_default()
+    structlog.get_logger(__name__).info(
+        BACKEND_EVENT, principal=getattr(principal, "name", "unknown"), backend=backend)
+
+
+def llm_for(principal) -> LLMService:
+    """이 principal 의 답변 백엔드로 `LLMService` 를 만들고, 그 사실을 한 줄 남긴다 (A2A 가 쓴다).
+
+    HTTP 표면은 `api.LLMService(provider=principal.llm_provider)` 를 직접 부르고
+    `log_answer_backend` 를 잇는다 — 테스트가 `api.LLMService` 를 바꿔 끼우기 때문이다.
+    어느 쪽이든 `tests/test_answer_backend_per_principal.py` 가 표면을 센다.
+    """
+    svc = LLMService(provider=getattr(principal, "llm_provider", None))
+    log_answer_backend(principal, svc)
+    return svc

@@ -49,6 +49,9 @@ class _Unconfigured:
 
     configured = False
 
+    def __init__(self, *a, **k):  # 답변 표면이 이제 `provider=` 를 넘긴다 (per-principal backend)
+        pass
+
 
 @pytest.fixture
 def client(monkeypatch):

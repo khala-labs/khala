@@ -40,7 +40,7 @@ from nexus.otel.aggregator import run_otel_aggregation
 from nexus.otel.diff_engine import run_diff
 from nexus.index.vector_index import configured_column
 from nexus.providers.embedding import embedding_service_from_config
-from nexus.providers.llm import LLMService
+from nexus.providers.llm import LLMService, log_answer_backend
 from nexus.repositories.graph import PostgresGraphRepository
 from nexus.rid import canonicalize_entity_name, entity_rid
 from nexus.search.anchor_status import summarize as _anchor_summary
@@ -614,7 +614,11 @@ async def search(req: SearchRequest, principal: Principal = Depends(get_principa
 
         # 재작성이 **먼저**다: 라우팅과 엔티티 추출이 그 질의를 써야 한다. 생략형 원문에서
         # 뽑은 엔티티는 앞턴의 주제를 모르고, 그래프 경로는 완성된 문장을 전제한다 (SPEC §3.3).
-        search_query, channels, rw = await _search_channels(req, LLMService())
+        # 재작성도 LLM 을 부른다 — 공개 요청이 재작성 한 번으로 브리지에 닿지 않게 같은 길로 간다
+        # (SPEC-nexus-per-principal-answer-backend §4.3).
+        rewrite_llm = LLMService(provider=principal.llm_provider)
+        log_answer_backend(principal, rewrite_llm)
+        search_query, channels, rw = await _search_channels(req, rewrite_llm)
 
         # 엔티티 감지
         gazetteer = _load_gazetteer()
@@ -850,7 +854,8 @@ async def search_answer(req: SearchAnswerRequest,
         _t0 = time.time()
         config = _load_config()
         embedding_svc = embedding_service_from_config(config)
-        llm_svc = LLMService()
+        llm_svc = LLMService(provider=principal.llm_provider)
+        log_answer_backend(principal, llm_svc)
         pool = await db.get_pool()
         graph_repo = PostgresGraphRepository(pool)
 
@@ -1379,7 +1384,8 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
         try:
             config = _load_config()
             embedding_svc = embedding_service_from_config(config)
-            llm_svc = LLMService()
+            llm_svc = LLMService(provider=principal.llm_provider)
+            log_answer_backend(principal, llm_svc)
             pool = await db.get_pool()
             graph_repo = PostgresGraphRepository(pool)
 

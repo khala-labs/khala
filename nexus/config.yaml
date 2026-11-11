@@ -249,6 +249,13 @@ auth:
   # 이 배포에 없는 이름은 건너뛴다(로컬 상자에 슬랙 토큰이 없는 것은 결함이 아니다). 다만
   # 선언된 것이 하나도 안 떠 있으면 검사는 판정하지 않고 종료 코드 76 으로 끝난다.
   serving_surfaces: [local-dev, slack-bot]
+  # 답변 백엔드는 principal 마다 고를 수 있다(SPEC-nexus-per-principal-answer-backend):
+  #   llm_provider: anthropic | claude-code   — 비우면 프로세스 기본값(NEXUS_LLM_PROVIDER)
+  #   owner: true                             — 구독 보유자 **본인**의 신원
+  # ⛔ 결정된 백엔드가 claude-code(키리스 브리지)인 principal 은 owner: true 여야 기동한다.
+  # 브리지는 구독 로그인으로 돌고, 그 구독으로 남의 요청을 대신 처리하는 것은 약관이 막는다.
+  # 공개 경로를 서빙하는 배포는 NEXUS_LLM_PROVIDER=anthropic 으로 두고, 본인 토큰에만
+  # llm_provider: claude-code + owner: true 를 단다. 이 주석은 문서일 뿐 — 지키는 것은 기동 검사다.
   # ⛔ **설명 층(narrator)의 신원은 `serving_surfaces` 에 안 넣는다.** 위 검사는 「선언된
   # 서빙 코퍼스마다 **모든** 서빙 표면이 닿는가」를 본다. 이 신원들의 좁은 범위는 결함이
   # 아니라 설계이므로 그 판정의 대상이 아니다 — 바로 위 주석의 "평가·실험 principal" 과
