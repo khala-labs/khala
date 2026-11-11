@@ -164,29 +164,6 @@ def test_the_anonymous_principal_is_never_owner():
     assert ANONYMOUS.llm_provider is None
 
 
-# ── A2A uses the same check ──────────────────────────────────────────────────────────────
-
-def test_a2a_and_auth_call_the_same_check():
-    from nexus.a2a import server
-
-    assert "check_principal_backends" in server.mount_a2a.__code__.co_names
-    assert "check_principal_backends" in AuthConfig.validate_startup.__code__.co_names
-
-
-def test_the_a2a_env_token_is_never_owner(default_bridge, monkeypatch):
-    pytest.importorskip("a2a")
-    from fastapi import FastAPI
-
-    from nexus.a2a.config import A2AConfig
-    from nexus.a2a.server import mount_a2a
-
-    monkeypatch.setenv("NEXUS_A2A_TOKEN", "a2a-token-for-this-test")
-    cfg = A2AConfig.from_dict({"a2a": {"enabled": True}})
-    assert cfg.principals and "owner" not in cfg.principals[-1]
-    with pytest.raises(RuntimeError, match="'a2a-static'"):
-        mount_a2a(FastAPI(), cfg, answer_fn=lambda q, t, c: None)
-
-
 # ── every answer surface passes the principal's choice ───────────────────────────────────
 
 def _names(func) -> set[str]:
@@ -207,14 +184,14 @@ def _names(func) -> set[str]:
 
 
 def _surfaces():
+    """HTTP surfaces only — the A2A surface needs the optional SDK and is counted in
+    `test_answer_backend_per_principal_a2a.py`, so this file runs in every CI job."""
     from nexus import api
-    from nexus.a2a import server
 
     return {
         "HTTP /search (rewrite)": api.search,
         "HTTP /search/answer": api.search_answer,
         "HTTP /search/answer/stream": api.search_answer_stream,
-        "A2A": server._default_answer_fn,
     }
 
 
