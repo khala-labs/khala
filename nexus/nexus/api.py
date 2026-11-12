@@ -11,7 +11,7 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Query, Depends
+from fastapi import APIRouter, FastAPI, HTTPException, UploadFile, File, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -153,7 +153,9 @@ async def _sweep_orphaned_syncs() -> None:
         pass
 
 
-app = FastAPI(title="Nexus", version="0.1.0", lifespan=lifespan)
+#: Every route of this module. The app itself is built by :func:`create_app` — importing this
+#: module reads no config and mounts nothing (2026-11-12 structure review).
+router = APIRouter()
 
 
 # ── Config ──
@@ -204,18 +206,9 @@ def _cors_origins() -> list[str]:
     )
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_cors_origins(),
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
 # ── A2A (Agent2Agent) Phase 0 — additive, flag-gated, off by default ──
 # Unset/false NEXUS_A2A_ENABLED ⇒ no routes, no SDK import, zero overhead (SPEC §6.4).
-def _mount_a2a_if_enabled() -> None:
+def _mount_a2a_if_enabled(app: FastAPI) -> None:
     from nexus.a2a.config import A2AConfig
 
     cfg = A2AConfig.from_dict(_load_config())
@@ -226,8 +219,6 @@ def _mount_a2a_if_enabled() -> None:
     mount_a2a(app, cfg)
 
 
-_mount_a2a_if_enabled()
-_mount_sources(app)
 
 
 # ── Response wrapper ──
@@ -462,7 +453,7 @@ class SupersedeRequest(RequestModel):
 
 # ── Endpoints ──
 
-@app.get("/auth/dev-token", response_model=NexusResponse)
+@router.get("/auth/dev-token", response_model=NexusResponse)
 async def dev_token() -> NexusResponse:
     """로컬 dev 온램프: NEXUS_DEV_TOKEN 설정 시 그 토큰을 노출(웹이 Bearer 로 자동 사용).
 
@@ -668,7 +659,7 @@ def _retrieval_deps(config: dict, embedding_svc, graph_repo) -> RetrievalDeps:
     )
 
 
-@app.post("/search", response_model=NexusResponse)
+@router.post("/search", response_model=NexusResponse)
 async def search(req: SearchRequest, principal: Principal = Depends(get_principal)) -> NexusResponse:
     """Hybrid 검색."""
     # ⛔ **이 자리는 오래 `effective_scope` 였다 — 쓰기 경로용 클램프다.** 그 함수는 요청
@@ -823,7 +814,7 @@ class FeedbackReasonRequest(RequestModel):
     reason: str
 
 
-@app.post("/feedback/offer", response_model=NexusResponse)
+@router.post("/feedback/offer", response_model=NexusResponse)
 async def feedback_offer(req: FeedbackOfferRequest,
                          principal: Principal = Depends(get_principal)) -> NexusResponse:
     """버튼을 붙여 답변을 내보냈다는 사실 한 줄(분모). **best-effort — 절대 실패하지 않는다.**"""
@@ -841,7 +832,7 @@ async def feedback_offer(req: FeedbackOfferRequest,
     return NexusResponse(data={"recorded": True})
 
 
-@app.post("/feedback/vote", response_model=NexusResponse)
+@router.post("/feedback/vote", response_model=NexusResponse)
 async def feedback_vote(req: FeedbackVoteRequest,
                         principal: Principal = Depends(get_principal)) -> NexusResponse:
     """투표 한 줄. 결속·만료에 걸리면 **409** — 조용히 성공한 척하지 않는다."""
@@ -859,7 +850,7 @@ async def feedback_vote(req: FeedbackVoteRequest,
     return NexusResponse(data={"vote_id": vote_id})
 
 
-@app.post("/feedback/reason", response_model=NexusResponse)
+@router.post("/feedback/reason", response_model=NexusResponse)
 async def feedback_reason(req: FeedbackReasonRequest,
                           principal: Principal = Depends(get_principal)) -> NexusResponse:
     """사유를 그 투표 행에 적는다. 가드 검사에 걸리면 `applied: false` — 200 이되 거짓말은 안 한다."""
@@ -873,7 +864,7 @@ async def feedback_reason(req: FeedbackReasonRequest,
     return NexusResponse(data={"applied": applied})
 
 
-@app.post("/search/answer", response_model=NexusResponse)
+@router.post("/search/answer", response_model=NexusResponse)
 async def search_answer(req: SearchAnswerRequest,
                         principal: Principal = Depends(get_principal)) -> NexusResponse:
     """검색 + LLM 답변 생성. `evidence_only` 면 생성 없이 근거 묶음까지."""
@@ -1059,7 +1050,7 @@ async def search_answer(req: SearchAnswerRequest,
         raise _server_error(e, "search_answer") from e
 
 
-@app.post("/ingest", response_model=NexusResponse)
+@router.post("/ingest", response_model=NexusResponse)
 async def ingest(req: IngestRequest, principal: Principal = Depends(get_principal)) -> NexusResponse:
     """문서 인덱싱 (통합 파이프라인: Collect → Classify → Chunk → BM25 → Vector → Graph)."""
     req.tenant, _ = effective_scope(principal, req.tenant, None)  # writes are tenant-bound
@@ -1088,7 +1079,7 @@ async def ingest(req: IngestRequest, principal: Principal = Depends(get_principa
         raise _server_error(e, "ingest") from e
 
 
-@app.post("/upload", response_model=NexusResponse)
+@router.post("/upload", response_model=NexusResponse)
 async def upload(
     file: UploadFile = File(...),
     path: str = Query(default="uploads", description="저장 경로"),
@@ -1145,7 +1136,7 @@ async def upload(
         raise _server_error(e, "upload") from e
 
 
-@app.get("/graph/{entity_rid_param}", response_model=NexusResponse)
+@router.get("/graph/{entity_rid_param}", response_model=NexusResponse)
 async def get_graph(
     entity_rid_param: str,
     hops: int = Query(default=1, ge=1, le=2),
@@ -1243,7 +1234,7 @@ async def get_graph(
         raise _server_error(e, "get_graph") from e
 
 
-@app.get("/diff", response_model=NexusResponse)
+@router.get("/diff", response_model=NexusResponse)
 async def get_diff(
     tenant: str = Query(default="default"),
     flag_filter: str | None = Query(default=None),
@@ -1312,7 +1303,7 @@ async def get_diff(
 # 여기 남겨두면 FastAPI 가 먼저 등록된 이 라우트를 쓰고, capability 게이트와
 # 새 필터/출처 필드가 조용히 무시된다 (SPEC-nexus-document-lifecycle §4.4).
 
-@app.post("/otel/aggregate", response_model=NexusResponse)
+@router.post("/otel/aggregate", response_model=NexusResponse)
 async def otel_aggregate(req: OtelAggregateRequest, principal: Principal = Depends(get_principal)) -> NexusResponse:
     """OTel 집계 실행."""
     req.tenant, _ = effective_scope(principal, req.tenant, None)  # writes are tenant-bound
@@ -1334,7 +1325,7 @@ async def otel_aggregate(req: OtelAggregateRequest, principal: Principal = Depen
         raise _server_error(e, "otel_aggregate") from e
 
 
-@app.post("/search/answer/stream")
+@router.post("/search/answer/stream")
 async def search_answer_stream(req: AnswerRequest, principal: Principal = Depends(get_principal)) -> StreamingResponse:
     """검색 + LLM 스트리밍 답변 (SSE). 2.0 UI용."""
     # ⛔ **이 경로만 다른 함수를 쓰고 있었다** (외부 평가 F2, 2026-09-02) — 범위 목록 대신
@@ -1600,7 +1591,7 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
     )
 
 
-@app.get("/entities/suggest", response_model=NexusResponse)
+@router.get("/entities/suggest", response_model=NexusResponse)
 async def suggest_entities(
     q: str = Query(..., min_length=1, description="엔티티 검색어"),
     tenant: str = Query(default="default"),
@@ -1628,7 +1619,7 @@ async def suggest_entities(
         raise _server_error(e, "suggest_entities") from e
 
 
-@app.get("/claims/value", response_model=NexusResponse)
+@router.get("/claims/value", response_model=NexusResponse)
 async def claim_value(
     concept: str = Query(..., min_length=1, description="개념 (예: Basic)"),
     tenant: str = Query(default="default"),
@@ -1657,7 +1648,7 @@ async def claim_value(
     )
 
 
-@app.get("/claims/grade-authority", response_model=NexusResponse)
+@router.get("/claims/grade-authority", response_model=NexusResponse)
 async def grade_authority_endpoint(
     enum_name: str = Query(default="GradeType"),
     subpath: str = Query(default=""),
@@ -1724,7 +1715,7 @@ class ExplainRequest(RequestModel):
     doc_contains: str = ""
 
 
-@app.post("/search/explain", response_model=NexusResponse)
+@router.post("/search/explain", response_model=NexusResponse)
 async def search_explain(req: ExplainRequest,
                          principal: Principal = Depends(get_principal)) -> NexusResponse:
     """**기대한 문서가 몇 위였나.** 패킷에 못 든 문서까지 보인다.
@@ -1771,7 +1762,7 @@ async def search_explain(req: ExplainRequest,
     return NexusResponse(data=found)
 
 
-@app.get("/visibility", response_model=NexusResponse)
+@router.get("/visibility", response_model=NexusResponse)
 async def visibility(principal: Principal = Depends(get_principal)) -> NexusResponse:
     """**당신이** 볼 수 있는 문서가 몇 건인가 — 0건을 받은 클라이언트가 이유를 물으러 오는 자리.
 
@@ -1804,7 +1795,7 @@ async def visibility(principal: Principal = Depends(get_principal)) -> NexusResp
     })
 
 
-@app.get("/status", response_model=NexusResponse)
+@router.get("/status", response_model=NexusResponse)
 async def status() -> NexusResponse:
     """시스템 상태 확인."""
     import httpx
@@ -1936,7 +1927,7 @@ async def status() -> NexusResponse:
 
 # ── Web UI 서빙 ──
 
-@app.get("/")
+@router.get("/")
 async def serve_ui():
     """Web UI SPA 진입점."""
     from pathlib import Path
@@ -1946,10 +1937,44 @@ async def serve_ui():
     return FileResponse(str(ui_path))
 
 
-# Static 파일 마운트 (모든 API 라우트 이후에 위치해야 함)
-# noqa 사유: catch-all "/static" 마운트는 반드시 모든 라우트 정의 이후여야 하므로
-# 이 import는 의도적으로 파일 하단에 위치한다.
-from pathlib import Path as _Path  # noqa: E402
-_web_dir = _Path(__file__).parent / "web"
-if _web_dir.exists():
-    app.mount("/static", StaticFiles(directory=str(_web_dir)), name="static")
+# ── App factory ──
+def create_app() -> FastAPI:
+    """Nexus 앱을 만든다 — 설정을 읽고, CORS 를 걸고, (켜져 있으면) A2A 를 붙인다.
+
+    ⛔ **왜 함수인가 (2026-11-12 구조 점검).** 이 일들이 모듈을 import 하는 순간 일어났다.
+    그래서 스크립트·테스트가 이 모듈의 이름 하나를 쓰려고 import 만 해도 `config.yaml` 을
+    읽었고, A2A 가 켜진 설정이면 SDK 를 불러 마운트했다. 이제 import 는 라우트를 정의할 뿐이다.
+
+    붙이는 **순서는 그대로다**: CORS → A2A → 소스·문서 라우터 → 이 모듈의 라우트 →
+    `/static`(catch-all 이라 반드시 마지막).
+    """
+    app = FastAPI(title="Nexus", version="0.1.0", lifespan=lifespan)
+    # CORS: an Authorization header requires a real origin allowlist, not "*".
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins(),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+    _mount_a2a_if_enabled(app)
+    _mount_sources(app)
+    app.include_router(router)
+    from pathlib import Path
+
+    web_dir = Path(__file__).parent / "web"
+    if web_dir.exists():
+        app.mount("/static", StaticFiles(directory=str(web_dir)), name="static")
+    return app
+
+
+def __getattr__(name: str):
+    """`nexus.api.app` 은 **처음 읽힐 때** 한 번 만든다 (PEP 562).
+
+    `uvicorn nexus.api:app`(Dockerfile · compose) 과 `from nexus.api import app` · `api.app`
+    (테스트)이 그대로 동작한다. 만든 앱은 모듈에 남으므로 이후에는 같은 객체다.
+    """
+    if name == "app":
+        globals()["app"] = created = create_app()
+        return created
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
