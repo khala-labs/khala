@@ -28,8 +28,7 @@ from nexus.auth.deps import make_get_principal
 from nexus.auth.scope import OUT_OF_SCOPE_EVENT
 from nexus.index.graph_extractor import find_entities_in_text, _build_entity_patterns, _load_gazetteer
 from nexus.ingest.pipeline import run_ingest
-from nexus.llm.answer import _load_staleness_ttl, _shown_query, generate_answer
-from nexus.documents.staleness import annotate_staleness
+from nexus.llm.answer import _shown_query, abstention, evidence_view, generate_answer
 from nexus.llm.failure import classify as classify_failure
 from nexus.llm.citations import validate_citations
 from nexus.llm.numbers import number_items, validate_numbers
@@ -42,11 +41,11 @@ from nexus.providers.embedding import embedding_service_from_config
 from nexus.providers.llm import LLMService, log_answer_backend
 from nexus.repositories.graph import PostgresGraphRepository
 from nexus.rid import canonicalize_entity_name, entity_rid
-from nexus.search.anchor_status import summarize as _anchor_summary
 from nexus.search.provenance import mark as _tier_mark
 from nexus.search.evidence_packet import code_values_payload, format_for_llm
 from nexus.search.evidence_share import counts as evidence_counts
 from nexus.search.reconcile import packet_for_answer
+from nexus.search.answer_pipeline import RetrievalDeps, retrieve_for_answer
 from nexus.search import history as history_module
 from nexus.search.corpus_scope import visibility_counts
 from datetime import datetime
@@ -595,27 +594,87 @@ async def _search_channels(req, llm_svc, *, identifiers: bool = False):
                       QueryChannel(ident, IDENTIFIER_CHANNEL_WEIGHT, "identifier")], rw
 
 
+def _resolve_read_scope(principal: Principal, asked_tenant: str | None,
+                        asked_clearance: str | None):
+    """읽기 범위 하나를 정한다 — `(scope, clearance, out_of_scope)`. 범위 밖이면 경고를 남긴다.
+
+    ⛔ **오류를 내지 않는다(존재 누출 금지).** 대신 **운영자에게 남긴다** — 그게 없으면
+    오설정 하나가 "요청하지 않은 코퍼스의 답" 을 영구히 정상 응답으로 준다 (1R I-009).
+
+    `effective_read_scope` 는 **이 모듈의 이름으로** 읽는다 — 테스트가 `nexus.api` 에서 그것을
+    바꿔 끼운다(SPEC-nexus-shared-answer-pipeline §4.1). 이 앞부분은 `/search` ·
+    `/search/answer` · `/search/answer/stream` 에 세 벌 있었다.
+    """
+    scope, clearance, out = effective_read_scope(principal, asked_tenant, asked_clearance)
+    if out:
+        import structlog
+        structlog.get_logger(__name__).warning(
+            OUT_OF_SCOPE_EVENT, principal=principal.name, resolved=list(scope))
+    return scope, clearance, out
+
+
+def _read_scope_from_request(req, principal: Principal):
+    """검색 요청의 읽기 범위. `req.classification_max` 와 `req.tenant` 를 **고쳐 쓴다.**
+
+    읽기 경로는 **범위를 목록으로** 받는다 (SPEC-nexus-tenant-read-scope §3.3). 목록이 없는
+    principal 은 원소 하나라 오늘과 같은 스칼라 술어가 나간다.
+
+    ⛔ **모델 기본값을 "요청했다" 로 읽으면 안 된다** (실측 2026-08-31). `AnswerRequest.tenant`
+    의 기본값이 `"default"` 라, 봇이 **보내지 않아도** 모델이 채워 넣는다. 그러면 *"요청을
+    안 주면 read_tenants 전체"* 가 영원히 발화하지 않는다. 그래서 **원문 본문에 키가
+    있었는지**로 판정한다. 기본값은 요청이 아니다.
+
+    ⛔ **`req.tenant` 에 목록을 넣지 않는다** (실측 2026-09-02). 그 필드는 `str` 이고
+    `search_log.tenant` 도 TEXT 다. 목록을 넣은 첫 버전에서 적재가 조용히 죽었고 —
+    `record_search` 는 절대 raise 안 한다 — 하루 넘게 신호가 한 줄도 안 쌓였다. 그래서
+    `req.tenant` 는 **귀속용 단일 값**(principal 의 테넌트)으로 두고, 범위는 돌려받은 값으로만
+    흐른다. 신호에는 `read_scope` 로 따로 남긴다.
+    """
+    asked_tenant = req.tenant if "tenant" in req.model_fields_set else None
+    scope, req.classification_max, _out = _resolve_read_scope(
+        principal, asked_tenant, req.classification_max)
+    req.tenant = principal.tenant
+    return scope
+
+
+def _answer_search_opts(req) -> dict:
+    """두 HTTP 답변 경로가 `hybrid_search` 에 더 넘기는 인자 — A2A·CLI 에는 이 요청 필드가 없다."""
+    return dict(
+        window=_origin_window(req),
+        exclude_doc_types=req.exclude_doc_types,
+        identifier_channel_asked=req.identifier_channel,
+        fusion_doc_agreement=req.fusion_doc_agreement,
+    )
+
+
+def _retrieval_deps(config: dict, embedding_svc, graph_repo) -> RetrievalDeps:
+    """공유 검색 앞부분(`search/answer_pipeline.py`)에 넘길 의존성 — **이 모듈의 이름으로**.
+
+    ⛔ 요청 시점에 이 모듈의 전역을 읽는다. 테스트가 `monkeypatch.setattr(api, "hybrid_search",
+    ...)` 로 바꿔 끼운 것이 그대로 파이프라인에 간다 — 파이프라인이 직접 import 하면 그 패치를
+    빠져나가 진짜 DB 나 모델에 닿는다.
+    """
+    return RetrievalDeps(
+        hybrid_search=hybrid_search,
+        packet_for_answer=packet_for_answer,
+        find_entities_in_text=find_entities_in_text,
+        load_gazetteer=_load_gazetteer,
+        build_entity_patterns=_build_entity_patterns,
+        determine_route=determine_route,
+        get_pool=db.get_pool,
+        graph_repository=graph_repo,
+        embedding_service=embedding_svc,
+        config=config,
+    )
+
+
 @app.post("/search", response_model=NexusResponse)
 async def search(req: SearchRequest, principal: Principal = Depends(get_principal)) -> NexusResponse:
     """Hybrid 검색."""
     # ⛔ **이 자리는 오래 `effective_scope` 였다 — 쓰기 경로용 클램프다.** 그 함수는 요청
-    # tenant 를 아예 안 보고 `principal.tenant` 하나를 돌려준다. 결과가 둘이었다: 범위 안의
-    # 테넌트를 지목해도 **조용히 무시**됐고, `read_scope` 가 여럿이어도 이 엔드포인트만
-    # 언제나 하나만 봤다. `auth/scope.py` 머리말이 이미 *"읽기 경로는 effective_read_scope 로
-    # 옮긴다"* 고 적어 뒀는데 `/search/answer` 만 옮겨 갔다.
-    #
-    # 아래 세 줄은 그 답변 경로에서 그대로 가져온 것이다 — 사본을 만드는 게 아니라 같은
-    # 접합부를 쓰는 것이고, 거기 달린 두 실측(기본값 · 귀속)이 여기에도 그대로 걸린다.
-    asked_tenant = req.tenant if "tenant" in req.model_fields_set else None
-    _scope, req.classification_max, _out = effective_read_scope(
-        principal, asked_tenant, req.classification_max)
-    # 범위는 로컬 `_scope` 로만 흐르고 `req.tenant` 는 귀속용 단일 값으로 남는다
-    # (`search_log.tenant` 가 TEXT 다 — 목록을 넣으면 적재가 조용히 죽는다).
-    req.tenant = principal.tenant
-    if _out:
-        import structlog
-        structlog.get_logger(__name__).warning(
-            OUT_OF_SCOPE_EVENT, principal=principal.name, resolved=list(_scope))
+    # tenant 를 아예 안 보고 `principal.tenant` 하나를 돌려줬다. 읽기 경로는 범위를 목록으로
+    # 받는다 — 답변 경로와 **같은 helper** 로 (`_read_scope_from_request`).
+    _scope = _read_scope_from_request(req, principal)
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="쿼리가 비어있습니다.")
     _validate_route(req.route)
@@ -638,31 +697,16 @@ async def search(req: SearchRequest, principal: Principal = Depends(get_principa
         log_answer_backend(principal, rewrite_llm)
         search_query, channels, rw = await _search_channels(req, rewrite_llm)
 
-        # 엔티티 감지
-        gazetteer = _load_gazetteer()
-        patterns = _build_entity_patterns(gazetteer)
-        detected = find_entities_in_text(search_query, patterns)
-        entity_rids = [
-            entity_rid(principal.tenant, e.entity_type, e.name)
-            for e in detected
-        ]
-
-        # 경로 결정
-        route = determine_route(search_query, req.route, [e.name for e in detected])
-
-        result = await hybrid_search(
-            window=_origin_window(req),
-            query=search_query,
-            tenant=_scope,
-            clearance=req.classification_max,
-            top_k=req.top_k,
-            embedding_svc=embedding_svc,
-            graph_repo=graph_repo if req.include_graph else None,
-            route=route,
-            entity_rids=entity_rids,
-            config=config,
-            channels=channels,
-        )
+        # 엔티티 → 경로 → 검색은 답변 경로와 **같은 코드**다(`search/answer_pipeline.py`).
+        # 이 경로는 답을 만들지 않으므로 패킷은 안 만든다.
+        retrieval = await retrieve_for_answer(
+            search_query, scope=_scope, clearance=req.classification_max,
+            route=req.route, top_k=req.top_k, entity_tenant=principal.tenant,
+            deps=_retrieval_deps(config, embedding_svc,
+                                 graph_repo if req.include_graph else None),
+            channels=channels, search_opts={"window": _origin_window(req)},
+            want_packet=False)
+        result, entity_rids = retrieval.search_result, retrieval.entity_rids
 
         # Graph findings + diff_flags 조립
         graph_findings = None
@@ -833,32 +877,7 @@ async def feedback_reason(req: FeedbackReasonRequest,
 async def search_answer(req: SearchAnswerRequest,
                         principal: Principal = Depends(get_principal)) -> NexusResponse:
     """검색 + LLM 답변 생성. `evidence_only` 면 생성 없이 근거 묶음까지."""
-    # 읽기 경로는 **범위를 목록으로** 받는다 (SPEC-nexus-tenant-read-scope §3.3). 목록이 없는
-    # principal 은 원소 하나라 오늘과 같은 스칼라 술어가 나간다.
-    # ⛔ **모델 기본값을 "요청했다" 로 읽으면 안 된다** (실측 2026-08-31). `AnswerRequest.tenant`
-    # 의 기본값이 `"default"` 라, 봇이 **보내지 않아도** 모델이 채워 넣는다. 그러면 §3.2 의
-    # *"요청을 안 주면 read_tenants 전체"* 가 영원히 발화하지 않고, 범위 목록을 붙여도
-    # 언제나 `default` 하나로 좁혀진다 — 컷오버가 그 자리에서 조용히 무효가 됐다.
-    #
-    # 그래서 **원문 본문에 키가 있었는지**로 판정한다. 기본값은 요청이 아니다.
-    asked_tenant = req.tenant if "tenant" in req.model_fields_set else None
-    _scope, req.classification_max, _out = effective_read_scope(
-        principal, asked_tenant, req.classification_max)
-    # ⛔ **`req.tenant` 에 목록을 넣지 않는다** (실측 2026-09-02). 첫 버전은 원소가 둘이면
-    # 리스트를 넣었는데, 그 필드는 `str` 이고 `search_log.tenant` 도 TEXT 다. 적재가 조용히
-    # 죽었고 — `record_search` 는 절대 raise 안 한다 — **범위를 붙인 그 시각부터 신호가 한 줄도
-    # 안 쌓였다.** 하루 넘게 몰랐다.
-    #
-    # 그래서 `req.tenant` 는 **귀속용 단일 값**(principal 의 테넌트)으로 두고, 범위는 로컬
-    # `_scope` 로만 흐른다. 신호에는 `read_scope` 로 따로 남긴다 — 교차 테넌트 조회를 단일
-    # 테넌트로 기록하면 `design_docs` 수요가 `default` 로 오귀속된다.
-    req.tenant = principal.tenant
-    if _out:
-        # ⛔ 오류를 내지 않는다(존재 누출 금지). 대신 **운영자에게 남긴다** — 그게 없으면
-        # 오설정 하나가 "요청하지 않은 코퍼스의 답" 을 영구히 정상 응답으로 준다 (1R I-009).
-        import structlog
-        structlog.get_logger(__name__).warning(
-            OUT_OF_SCOPE_EVENT, principal=principal.name, resolved=list(_scope))
+    _scope = _read_scope_from_request(req, principal)
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="쿼리가 비어있습니다.")
     _validate_route(req.route)
@@ -880,40 +899,16 @@ async def search_answer(req: SearchAnswerRequest,
         search_query, channels, rw = await _search_channels(
             req, llm_svc, identifiers=req.identifier_channel)
 
-        # 엔티티 감지
-        gazetteer = _load_gazetteer()
-        patterns = _build_entity_patterns(gazetteer)
-        detected = find_entities_in_text(search_query, patterns)
-        entity_rids = [
-            entity_rid(principal.tenant, e.entity_type, e.name)
-            for e in detected
-        ]
-
-        route = determine_route(search_query, req.route, [e.name for e in detected])
-
-        # 검색
-        search_result = await hybrid_search(
-            window=_origin_window(req),
-            query=search_query,
-            tenant=_scope,
-            clearance=req.classification_max,
-            top_k=req.top_k,
-            embedding_svc=embedding_svc,
-            graph_repo=graph_repo,
-            route=route,
-            entity_rids=entity_rids,
-            config=config,
-            channels=channels,
-            exclude_doc_types=req.exclude_doc_types,
-            identifier_channel_asked=req.identifier_channel,
-            fusion_doc_agreement=req.fusion_doc_agreement,
-        )
-
-        # 답변 근거 패킷은 한 함수로만 만든다 (`search/reconcile.py`).
-        packet = await packet_for_answer(
-            search_result, _scope, req.classification_max,
-            config=config, search=hybrid_search, embedding_svc=embedding_svc,
-            question=_search_text(req) or req.query, pool=await db.get_pool())
+        # 엔티티 → 경로 → 검색 → 답변 근거 패킷. 네 API 표면이 같은 함수를 탄다
+        # (`search/answer_pipeline.py`) — 패킷은 그 안의 `packet_for_answer` 한 곳에서 만든다.
+        retrieval = await retrieve_for_answer(
+            search_query, scope=_scope, clearance=req.classification_max,
+            route=req.route, top_k=req.top_k, entity_tenant=principal.tenant,
+            deps=_retrieval_deps(config, embedding_svc, graph_repo),
+            question=_search_text(req) or req.query,
+            channels=channels, search_opts=_answer_search_opts(req))
+        search_result, packet = retrieval.search_result, retrieval.packet
+        route, entity_rids = retrieval.route, retrieval.entity_rids
 
         # 호출자 컨텍스트. **여기서 처음 쓰인다** — 위의 검색·재작성·근거 묶음은 이 값을 본 적이 없다.
         # 비었거나 공백뿐이면 안 준 것이다(`effective_context`, 프롬프트·응답·기록이 같은 규칙).
@@ -1375,20 +1370,9 @@ async def otel_aggregate(req: OtelAggregateRequest, principal: Principal = Depen
 @app.post("/search/answer/stream")
 async def search_answer_stream(req: AnswerRequest, principal: Principal = Depends(get_principal)) -> StreamingResponse:
     """검색 + LLM 스트리밍 답변 (SSE). 2.0 UI용."""
-    # ⛔ **이 경로만 다른 함수를 쓰고 있었다** (외부 평가 F2, 2026-09-02). 비스트리밍 HTTP 는
-    # `effective_read_scope` 로 **범위 목록**을 받는데 여기만 `effective_scope` 의 스칼라였다.
-    # 그래서 웹 채팅은 컷오버가 연 교차 코퍼스를 못 읽었고, 범위 밖 요청의 감사 이벤트도
-    # 남지 않았다.
-    asked_tenant = req.tenant if "tenant" in req.model_fields_set else None
-    _scope, req.classification_max, _out = effective_read_scope(
-        principal, asked_tenant, req.classification_max)
-    # 귀속은 단일 값, 범위는 로컬 `_scope` 로만 흐른다 — 목록을 `str` 필드에 넣었다가 적재가
-    # 34시간 조용히 죽은 것이 2026-09-02 이다.
-    req.tenant = principal.tenant
-    if _out:
-        import structlog
-        structlog.get_logger(__name__).warning(
-            OUT_OF_SCOPE_EVENT, principal=principal.name, resolved=list(_scope))
+    # ⛔ **이 경로만 다른 함수를 쓰고 있었다** (외부 평가 F2, 2026-09-02) — 범위 목록 대신
+    # `effective_scope` 의 스칼라였다. 이제 다른 두 경로와 같은 helper 다.
+    _scope = _read_scope_from_request(req, principal)
     if not req.query.strip():
         raise HTTPException(status_code=400, detail="쿼리가 비어있습니다.")
 
@@ -1414,115 +1398,45 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
             search_query, channels, rw = await _search_channels(
             req, llm_svc, identifiers=req.identifier_channel)
 
-            # 엔티티 감지
-            gazetteer = _load_gazetteer()
-            patterns = _build_entity_patterns(gazetteer)
-            detected = find_entities_in_text(search_query, patterns)
-            entity_rids = [
-                entity_rid(req.tenant, e.entity_type, e.name)
-                for e in detected
-            ]
+            # 엔티티 → 경로 → 검색 → 답변 근거 패킷 — 비스트리밍과 **같은 함수**다.
+            # ⛔ 이 경로는 한때 `assemble_packet` 을 직접 불러 정정 확인 패스·페어 확장·코드 값이
+            # 빠졌다(외부 평가 F2). 이제 사본이 없다.
+            retrieval = await retrieve_for_answer(
+                search_query, scope=_scope, clearance=req.classification_max,
+                route=req.route, top_k=req.top_k, entity_tenant=principal.tenant,
+                deps=_retrieval_deps(config, embedding_svc, graph_repo),
+                question=_search_text(req) or req.query,
+                channels=channels, search_opts=_answer_search_opts(req))
+            search_result, packet = retrieval.search_result, retrieval.packet
+            route, entity_rids = retrieval.route, retrieval.entity_rids
 
-            route = determine_route(search_query, req.route, [e.name for e in detected])
-
-            # 검색 (검색 완료 시 evidence 먼저 전송)
-            search_result = await hybrid_search(
-            window=_origin_window(req),
-                query=search_query,
-                tenant=_scope,
-                clearance=req.classification_max,
-                top_k=req.top_k,
-                embedding_svc=embedding_svc,
-                graph_repo=graph_repo,
-                route=route,
-                entity_rids=entity_rids,
-                config=config,
-                channels=channels,
-                exclude_doc_types=req.exclude_doc_types,
-                identifier_channel_asked=req.identifier_channel,
-                fusion_doc_agreement=req.fusion_doc_agreement,
-            )
-
-            # ⛔ **여기서 `assemble_packet` 을 직접 부르고 있었다** (외부 평가 F2).
-            # `packet_for_answer` 가 정정 확인 패스·페어 확장·코드 값을 붙이는 자리이고, 그
-            # docstring 이 *"답변용 근거 패킷은 이 함수 하나로 만든다 … 표면마다 붙이면 하나가
-            # 조용히 빠진다"* 라고 적어 두었다. **웹 채팅이 타는 경로가 바로 그 하나였다.**
-            # 평가 실측(정책 8질의): 4건에서 답변 근거가 적게 갔고 최대 19 → 13(−32%).
-            packet = await packet_for_answer(
-                search_result, _scope, req.classification_max,
-                config=config, search=hybrid_search, embedding_svc=embedding_svc,
-                question=_search_text(req) or req.query, pool=await db.get_pool())
-
-            # 1) evidence 이벤트 전송 — 신선도(staleness) 판정 포함
-            from datetime import datetime, timezone
-            _snips = [
-                {
-                    "chunk_rid": s.chunk_rid,
-                    "doc_title": s.doc_title,
-                    "section_path": s.section_path,
-                    "source_uri": s.source_uri,
-                    "text": s.text,
-                    "score": s.score,
-                    "doc_type": s.doc_type,
-                    "provenance_tier": getattr(s, "provenance_tier", "authored"),
-                    # 등급을 **말로 바꾼 것**도 같이 보낸다. ADR-0010 hop 5 는 API 응답을
-                    # "and thereby the web client" 라고 적었는데 그 thereby 가 성립하지
-                    # 않았다 — 웹도 슬랙도 등급을 받고도 안 그렸다. 표현계층이 어휘를
-                    # 지어내면 API 표면마다 다른 말이 되므로(`search/provenance.py` 머리말)
-                    # 문자열은 여기서 만들어 보낸다.
-                    "provenance_mark": _tier_mark(getattr(s, "provenance_tier", "authored")),
-                    # 스트리밍도 같은 사실을 낸다 — API 표면마다 다른 답변 근거를 보이면 안 된다.
-                    "code_anchors": _anchor_summary(getattr(s, "code_anchors", []),
-                                                    getattr(s, "code_deleted", []),
-                                                    getattr(s, "code_scan", None)),
-                    # CRM 마커 — `llm/answer.py` 의 같은 자리와 같은 이유. 웹 채팅이 타는 이 경로에만
-                    # 빠져 있어서, 합성 자료가 실제 운영 문서와 같은 얼굴로 인용될 수 있었다.
-                    # `tests/test_each_evidence_snippet_says_where_it_ranked.py` 가 두 경로의 칸을 맞춰 본다.
-                    "labels": list(getattr(s, "labels", ()) or ()),
-                    "synthetic": SYNTHETIC_LABEL in (getattr(s, "labels", ()) or ()),
-                    "updated_at": s.updated_at,
-                }
-                for s in packet.snippets
-            ]
-            _snips, n_stale = annotate_staleness(_snips, datetime.now(timezone.utc), _load_staleness_ttl())
-            for _sn in _snips:
-                _ua = _sn.get("updated_at")
-                _sn["updated_at"] = _ua.isoformat() if _ua else None
-            # 비스트리밍과 같은 필드 — API 표면마다 다른 답변 근거를 보이면 안 된다(`_ranked` 머리말).
-            _snips = _ranked(_snips, search_result.hits)
+            # 1) evidence 이벤트 — 비스트리밍과 **같은 함수**(`evidence_view`)가 만든다.
+            # 이 변환이 여기 따로 있던 동안 출처 · 관측 간선 · 합성 표시가 경로마다 갈렸다.
+            view = evidence_view(packet)
+            n_stale = view.n_stale
             evidence_data = {
-                "evidence_snippets": _snips,
-                "provenance": [
-                    {"doc_rid": p.doc_rid, "source_uri": p.source_uri,
-                     "source_version": p.source_version, "doc_title": p.doc_title}
-                    for p in packet.provenance
-                ],
+                # 비스트리밍과 같은 필드 — 순위(`_ranked`)도 같은 함수가 단다.
+                "evidence_snippets": _ranked(view.snippets, search_result.hits),
+                "provenance": view.provenance,
+                "graph_findings": view.graph_findings,
                 "route_used": route,
                 # 답변 근거와 같은 이벤트에 실린다 — 답변 근거가 왜 이것뿐인지를 설명하는 사실이라
                 # 답변보다 먼저 도착해야 한다.
                 "degraded": search_result.degraded,
                 "enrichment_failed": search_result.enrichment_failed,
+                "n_unknown_origin_time": search_result.n_unknown_origin_time,
             }
             yield f"event: evidence\ndata: {json.dumps(evidence_data, ensure_ascii=False)}\n\n"
 
-            # 2) graph 이벤트 전송
-            if search_result.graph:
-                graph_data = {
-                    "center": search_result.graph.center_name,
-                    "designed_edges": [
-                        {"type": e.edge_type, "from": e.from_name, "to": e.to_name, "confidence": e.confidence}
-                        for e in search_result.graph.edges
-                    ],
-                    "observed_edges": [
-                        {"type": o.edge_type, "from": o.from_name, "to": o.to_name,
-                         "call_count": o.call_count, "error_rate": o.error_rate}
-                        for o in search_result.graph.observed_edges
-                    ],
-                }
-                yield f"event: graph\ndata: {json.dumps(graph_data, ensure_ascii=False)}\n\n"
+            # 2) graph 이벤트 — 웹 클라이언트가 읽는 이벤트라 그대로 둔다. 값은 위 `graph_findings`
+            # 와 같은 것이다(`call_count` 와 `calls` 를 둘 다 싣는다 — 어느 쪽도 잃지 않는다).
+            if view.graph_findings:
+                yield f"event: graph\ndata: {json.dumps(view.graph_findings, ensure_ascii=False)}\n\n"
 
             # 3) LLM 스트리밍 답변 — 청크를 누적해 완료 후 인용을 검증한다.
             answer_parts: list[str] = []
+            #: 클라이언트에게 **실제로 나간** 답변 글 전부(고정 안내문 포함) — done 의 `answer`.
+            shown_parts: list[str] = []
             llm_failed = False
             llm_failure_reason = None
             usage_out: list = []
@@ -1540,10 +1454,12 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
             # 받으면 조용히 갈린다(A44). 위의 검색·재작성·근거 묶음은 이 값을 본 적이 없다.
             answer_context = effective_context(req.answer_context)
             if not packet.snippets:
-                _payload = json.dumps({'text': '제공된 문서에서 해당 정보를 찾을 수 없습니다.'}, ensure_ascii=False)
+                shown_parts.append('제공된 문서에서 해당 정보를 찾을 수 없습니다.')
+                _payload = json.dumps({'text': shown_parts[-1]}, ensure_ascii=False)
                 yield f"event: answer_delta\ndata: {_payload}\n\n"
             elif not llm_svc.configured:
                 # 미설정(키 없음): 일시적 오류가 아니라 행동지침을 준다. 답변 근거는 이미 위에서 전송됨.
+                shown_parts.append(LLM_NOT_CONFIGURED_NOTICE)
                 _payload = json.dumps({'text': LLM_NOT_CONFIGURED_NOTICE}, ensure_ascii=False)
                 yield f"event: answer_delta\ndata: {_payload}\n\n"
             else:
@@ -1557,6 +1473,7 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
                 try:
                     async for chunk in llm_svc.stream(system_prompt, user_prompt, usage_out=usage_out):
                         answer_parts.append(chunk)
+                        shown_parts.append(chunk)
                         yield f"event: answer_delta\ndata: {json.dumps({'text': chunk}, ensure_ascii=False)}\n\n"
                 except Exception as _e:
                     llm_failed = True
@@ -1564,8 +1481,8 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
                     # 웹은 여전히 크레딧 소진과 일시 장애를 구별하지 못한다 — 웹이
                     # 쓰는 것이 이 경로다.
                     llm_failure_reason = classify_failure(_e)
-                    _payload = json.dumps(
-                        {'text': '답변을 생성할 수 없습니다. 위 근거를 직접 확인해주세요.'}, ensure_ascii=False)
+                    shown_parts.append('답변을 생성할 수 없습니다. 위 근거를 직접 확인해주세요.')
+                    _payload = json.dumps({'text': shown_parts[-1]}, ensure_ascii=False)
                     yield f"event: answer_delta\ndata: {_payload}\n\n"
 
             # 4) 완료 이벤트 — 누적 답변의 인용·숫자를 답변 근거와 대조해 함께 실어 보낸다.
@@ -1602,7 +1519,7 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
                     n_citations=len(report.citations) if has_answer else None,
                     unverified_citations=report.unverified_count if has_answer else None,
                     unverified_numbers=nreport.unverified_count if has_answer else None,
-                    abstained=not packet.snippets,
+                    abstained=abstention(packet)[0],
                     llm_failed=llm_failed,
                     # 모양도 같은 `has_answer` 조건을 탄다 — 고정 안내문의 문장 수는 측정이
                     # 아니다. 키는 빼지 않고 `None` 으로 남긴다(감사 B2).
@@ -1641,8 +1558,16 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
             rewritten_text=rw.query if (rw and rw.changed) else None,
             spans=getattr(search_result, "spans", None))
 
+            abstained, abstain_reason = abstention(packet)
             done_data = {
+                # 클라이언트가 받은 답변 글 전부 — 비스트리밍 `answer` 와 같은 자리다. 델타를
+                # 못 모은 소비자(재연결 · 기록)도 done 하나로 답을 갖는다.
+                "answer": "".join(shown_parts),
                 "timing_ms": search_result.timing_ms,
+                # 비스트리밍과 **같은 함수**(`abstention`)가 정한다. 이 경로에는 없던 키다.
+                "abstained": abstained,
+                "abstain_reason": abstain_reason,
+                "n_unknown_origin_time": search_result.n_unknown_origin_time,
                 # 실패와 그 사유는 done 에 실린다 — answer_delta 는 사람이 읽는
                 # 글이고, 클라이언트가 분기할 값은 글이 아니라 필드여야 한다.
                 "llm_failed": llm_failed,
@@ -1873,7 +1798,7 @@ async def search_explain(req: ExplainRequest,
     from nexus.search.signals import query_sha256
     from nexus.search.span_store import explain_query
 
-    scope, clearance, _out = effective_read_scope(principal, None, None)
+    scope, clearance, _out = _resolve_read_scope(principal, None, None)
     found = await explain_query(query_sha256(req.query), principal.tenant,
                                 scope, clearance)
     if found is None:

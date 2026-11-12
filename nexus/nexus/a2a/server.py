@@ -44,6 +44,7 @@ from nexus.a2a.mapping import build_grounded_artifact
 from nexus.a2a.policy import effective_scope, resolve_a2a_principal
 from nexus.a2a.ratelimit import RateLimiter
 from nexus.auth.deps import extract_bearer
+from nexus.auth.scope import OUT_OF_SCOPE_EVENT, effective_read_scope
 from nexus.llm.answer import AnswerResult
 
 # AnswerFn: (query, tenant, clearance) -> AnswerResult (sync or async).
@@ -282,11 +283,22 @@ def mount_a2a(
             return _rpc_error(req_id, _INVALID_PARAMS, "empty query")
 
         req_tenant, req_clearance = _requested_scope(params)
-        tenant, clearance = effective_scope(principal, req_tenant, req_clearance)
+        # ⛔ **읽기 경로다 — 읽기 클램프를 쓴다** (SPEC-nexus-shared-answer-pipeline §4.1). 이
+        # 자리는 `effective_scope`(쓰기용, 요청 테넌트를 안 보고 principal 의 것 하나)였다. 그래서
+        # `read_tenants` 가 여럿인 토큰도 A2A 로는 자기 테넌트만 읽었다 — HTTP 는 이미 전부 읽는다.
+        # 범위 밖 요청은 오류를 내지 않고(존재 누출 금지) HTTP 와 **같은 이벤트**로 남긴다.
+        scope, clearance, out = effective_read_scope(principal, req_tenant, req_clearance)
+        if out:
+            import structlog
+            structlog.get_logger(__name__).warning(
+                OUT_OF_SCOPE_EVENT, principal=principal.name, resolved=list(scope))
+        # 귀속(감사 · 작업 메타데이터)은 단일 값이다 — HTTP 가 `req.tenant` 를 principal 의
+        # 테넌트로 두는 것과 같은 규칙. 범위는 답변 함수로만 흐른다.
+        tenant = principal.tenant
 
         # 기본 답변 경로에만 principal 을 넘긴다 — 주입된 답변 함수(테스트)는 세 인자 계약 그대로다.
         if answer_fn is None:
-            result = _default_answer_fn(query, tenant, clearance, principal=principal)
+            result = _default_answer_fn(query, scope, clearance, principal=principal)
         else:
             result = resolved_answer_fn(query, tenant, clearance)
         if isinstance(result, Awaitable):
@@ -302,7 +314,7 @@ def mount_a2a(
         return {"jsonrpc": "2.0", "id": req_id, "result": task}
 
 
-async def _default_answer_fn(query: str, tenant: str, clearance: str,
+async def _default_answer_fn(query: str, tenant, clearance: str,
                              principal: object | None = None) -> AnswerResult:
     """Production grounded-answer path — the same pipeline behind ``POST /search/answer``.
 
@@ -319,12 +331,16 @@ async def _default_answer_fn(query: str, tenant: str, clearance: str,
     from nexus.providers.embedding import embedding_service_from_config
     from nexus.providers.llm import llm_for
     from nexus.repositories.graph import PostgresGraphRepository
-    from nexus.rid import entity_rid
-    from nexus.search.reconcile import packet_for_answer
+    from nexus.search import reconcile
+    from nexus.search.answer_pipeline import RetrievalDeps, retrieve_for_answer
     from nexus.search.hybrid import hybrid_search
     from nexus.search.router import determine_route
 
     from nexus.config import load_config
+
+    # `tenant` is the read scope (a tuple) from the dispatcher; a bare string still works.
+    scope = (tenant,) if isinstance(tenant, str) else tuple(tenant)
+    own_tenant = getattr(principal, "tenant", None) or scope[0]
 
     _t0 = time.time()
     config = load_config()
@@ -333,21 +349,22 @@ async def _default_answer_fn(query: str, tenant: str, clearance: str,
     pool = await db.get_pool()
     graph_repo = PostgresGraphRepository(pool)
 
-    gazetteer = _load_gazetteer()
-    patterns = _build_entity_patterns(gazetteer)
-    detected = find_entities_in_text(query, patterns)
-    entity_rids = [entity_rid(tenant, e.entity_type, e.name) for e in detected]
-    route = determine_route(query, "auto", [e.name for e in detected])
-
-    search_result = await hybrid_search(
-        query=query, tenant=tenant, clearance=clearance, top_k=10,
-        embedding_svc=embedding_svc, graph_repo=graph_repo, route=route,
-        entity_rids=entity_rids, config=config,
+    # Same retrieval code as the HTTP answer paths (search/answer_pipeline.py). This surface runs
+    # no channel step and passes none of the HTTP-only search arguments, as before; route stays
+    # "auto" and top_k stays 10. The packet always comes from reconcile.packet_for_answer.
+    retrieval = await retrieve_for_answer(
+        query, scope=scope, clearance=clearance, route="auto", top_k=10,
+        entity_tenant=own_tenant,
+        deps=RetrievalDeps(
+            hybrid_search=hybrid_search, packet_for_answer=reconcile.packet_for_answer,
+            find_entities_in_text=find_entities_in_text, load_gazetteer=_load_gazetteer,
+            build_entity_patterns=_build_entity_patterns, determine_route=determine_route,
+            get_pool=db.get_pool, graph_repository=graph_repo,
+            embedding_service=embedding_svc, config=config,
+        ),
     )
-    packet = await packet_for_answer(search_result, tenant, clearance,
-                                     config=config, search=hybrid_search,
-                                     embedding_svc=embedding_svc,
-                                     question=query, pool=await db.get_pool())
+    search_result, packet = retrieval.search_result, retrieval.packet
+    route, entity_rids = retrieval.route, retrieval.entity_rids
     answer_result = await generate_answer(
         query=query, packet=packet, llm_svc=llm_svc,
         route_used=route, timing_ms=search_result.timing_ms,
@@ -359,7 +376,8 @@ async def _default_answer_fn(query: str, tenant: str, clearance: str,
         search_result, answer_result, path="a2a",
         # 답변 근거 점유율은 패킷에서 센다 (§5.3) — 히트만 세면 필·짝·정정이 빠진다.
         evidence=packet.snippets,
-        tenant=tenant, clearance=clearance, query=query,
+        # 귀속은 단일 값, 범위는 따로 — HTTP 답변 경로와 같은 규칙이다.
+        tenant=own_tenant, read_scope=scope, clearance=clearance, query=query,
         n_entities=len(entity_rids),
         latency_ms=int((time.time() - _t0) * 1000),
     )

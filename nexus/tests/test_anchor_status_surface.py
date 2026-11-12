@@ -356,7 +356,7 @@ async def test_a_missing_scan_row_reads_as_unknown_not_as_fresh(monkeypatch):
 
 
 def test_every_surface_that_summarises_also_passes_the_basis():
-    """⛔ API 표면 둘이 각자 요약을 만든다 — 하나만 고치면 그쪽만 기준을 말한다.
+    """⛔ 요약을 만드는 자리마다 판정 기준을 넘기는가 — 하나만 고치면 그쪽만 기준을 말한다.
 
     이 리포는 정확히 그 모양으로 데였다(2026-09-02, 스트리밍 경로만 답변 근거 조립을 직접 불러
     정정·짝·코드 값이 웹 채팅에서만 빠졌다). 그래서 **소스를 읽어서** 센다 — 호출을 흉내
@@ -366,8 +366,13 @@ def test_every_surface_that_summarises_also_passes_the_basis():
     from pathlib import Path
 
     root = Path(__file__).resolve().parents[1]
+    # 요약을 만드는 자리는 이제 **하나**다 — `llm/answer.py::evidence_view` 를 두 HTTP 답변
+    # 경로가 같이 쓴다(SPEC-nexus-shared-answer-pipeline §4.3). `api.py` 가 다시 직접 요약하면
+    # 사본이 돌아온 것이다.
+    api_src = (root / "nexus/api.py").read_text(encoding="utf-8")
+    assert "_anchor_summary" not in api_src and "anchor_status import summarize" not in api_src, \
+        "nexus/api.py 가 앵커 요약을 직접 만든다 — `evidence_view` 를 거쳐라"
     surfaces = {
-        "nexus/api.py": re.compile(r"_anchor_summary\(", re.M),
         # `summarize_debt(` 은 안 걸린다 — 여는 괄호가 바로 뒤에 와야 한다.
         "nexus/llm/answer.py": re.compile(r"summarize\("),
     }

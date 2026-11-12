@@ -305,8 +305,8 @@ def query(
         from nexus.providers.embedding import embedding_service_from_config
         from nexus.providers.llm import LLMService
         from nexus.repositories.graph import PostgresGraphRepository
-        from nexus.rid import entity_rid
-        from nexus.search.reconcile import packet_for_answer
+        from nexus.search import reconcile
+        from nexus.search.answer_pipeline import RetrievalDeps, retrieve_for_answer
         from nexus.search.hybrid import hybrid_search
         from nexus.search.router import determine_route
 
@@ -316,24 +316,24 @@ def query(
         pool = await db.get_pool()
         graph_repo = PostgresGraphRepository(pool)
 
-        # 엔티티 감지
-        gazetteer = _load_gazetteer()
-        patterns = _build_entity_patterns(gazetteer)
-        detected = find_entities_in_text(q, patterns)
-        entity_rids = [
-            entity_rid(tenant, e.entity_type, e.name)
-            for e in detected
-        ]
-
-        route_used = determine_route(q, route, [e.name for e in detected])
-
-        # 검색
-        result = await hybrid_search(
-            query=q, tenant=tenant, clearance="INTERNAL",
-            top_k=top_k, embedding_svc=embedding_svc,
-            graph_repo=graph_repo, route=route_used,
-            entity_rids=entity_rids, config=config,
+        # 엔티티 → 경로 → 검색 → (답을 만들 때만) 답변 근거 패킷. HTTP 답변 경로와 **같은
+        # 코드**다(`search/answer_pipeline.py`). 이 명령은 principal 이 없어 `--tenant` 가 곧
+        # 범위이고 등급은 `INTERNAL` 이다 — 그대로 둔다. 패킷은 `--answer` 이고 히트가 있을 때만
+        # 만든다(오늘의 조건). 채널 단계와 HTTP 전용 검색 인자는 이 명령에 없다 — 전과 같다.
+        retrieval = await retrieve_for_answer(
+            q, scope=tenant, clearance="INTERNAL", route=route, top_k=top_k,
+            entity_tenant=tenant,
+            deps=RetrievalDeps(
+                hybrid_search=hybrid_search, packet_for_answer=reconcile.packet_for_answer,
+                find_entities_in_text=find_entities_in_text, load_gazetteer=_load_gazetteer,
+                build_entity_patterns=_build_entity_patterns, determine_route=determine_route,
+                get_pool=db.get_pool, graph_repository=graph_repo,
+                embedding_service=embedding_svc, config=config,
+            ),
+            want_packet=answer, skip_packet_on_zero_hits=True,
         )
+        result, packet = retrieval.search_result, retrieval.packet
+        route_used, entity_rids = retrieval.route, retrieval.entity_rids
 
         # **어느 코퍼스를 뒤졌나.** 이 명령은 principal 이 없어서 `--tenant` 가 곧 범위이고,
         # 기본값이 `default` 다 — 즉 **안 주면 말없이 정책 코퍼스만 본다.**
@@ -358,14 +358,9 @@ def query(
 
         # LLM 답변
         answer_result = None
-        if answer and result.hits:
+        if packet is not None:
             typer.echo("─" * 60)
             typer.echo("답변 생성 중...\n")
-            # 등급은 이 명령이 검색에 넘긴 값과 **같은 것**을 쓴다(위 `hybrid_search`).
-            packet = await packet_for_answer(result, tenant, "INTERNAL",
-                                             config=config, search=hybrid_search,
-                                             embedding_svc=embedding_svc,
-                                             question=q, pool=await db.get_pool())
             llm_svc = LLMService()
             answer_result = await generate_answer(
                 query=q, packet=packet, llm_svc=llm_svc,
