@@ -75,14 +75,11 @@ export default defineConfig({
   site: 'https://khala-labs.github.io',
   base: BASE,
   // Component rename (ADR-0005): old tool slugs redirect to new ones.
-  // NOTE: /tools/probe is intentionally NOT redirected — that slug is now a LIVE
-  // page (the mutation tool, formerly mutqa, took the "Probe" name). The old
-  // review tool moved to /tools/observer. Only freed slugs are redirected.
+  // Observer, Probe and Adept pages were taken down when those tools were retired
+  // (ADR-0011), so the mutqa → probe redirect went with them.
   redirects: {
     '/tools/specledger': '/tools/arbiter',
-    '/tools/mutqa': '/tools/probe',
     '/ko/tools/specledger': '/ko/tools/arbiter',
-    '/ko/tools/mutqa': '/ko/tools/probe',
   },
   markdown: {
     rehypePlugins: [rehypeMermaidPre, rehypeBaseUrl],
@@ -124,10 +121,7 @@ export default defineConfig({
             { label: 'Nexus', slug: 'tools/nexus' },
             { label: 'Nexus — Using the web', translations: { ko: 'Nexus 웹 사용 가이드' }, slug: 'tools/nexus-web' },
             { label: 'Archon', slug: 'tools/archon' },
-            { label: 'Observer', slug: 'tools/observer' },
             { label: 'Arbiter', slug: 'tools/arbiter' },
-            { label: 'Probe', slug: 'tools/probe' },
-            { label: 'Adept', slug: 'tools/adept' },
           ],
         },
         {
