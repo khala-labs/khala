@@ -11,6 +11,8 @@ ADR-0007
 ADR-0008
 ADR-0009
 ADR-0010
+ADR-0011
+ADR-0012
 SPEC-arbiter-claude-code-critic
 SPEC-arbiter-status-is-read-only
 SPEC-nexus-a2a-external-exposure-audit-phase2
