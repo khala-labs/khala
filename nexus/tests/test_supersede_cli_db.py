@@ -12,7 +12,7 @@ from nexus.cli import app
 from nexus.rid import doc_rid
 
 DB_URL = os.environ.get("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 미설정")
+pytestmark = pytest.mark.db
 
 _T = "default"
 _OLD = doc_rid(f"{_T}:specs/old.md")

@@ -79,7 +79,7 @@ def test_invalidation_predicate_watches_the_prefix():
     assert "tsvector_ko = CASE WHEN" in sql
 
 
-@pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_prefix_change_nulls_the_vector_on_reingest():
     """행동으로 확인한다: 접두사만 달라진 upsert 가 벡터를 NULL 로 되돌리는가.
 

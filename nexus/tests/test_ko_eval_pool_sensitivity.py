@@ -246,7 +246,7 @@ def test_the_committed_costs_carry_the_shape_the_spec_reports():
     assert sum(1 for r in rows if r["removal"]) == 20
 
 
-@pytest.mark.skipif(not _STORE_URL, reason="no database: the store-dependent half did not run")
+@pytest.mark.db
 @pytest.mark.asyncio
 async def test_costs_recompute_from_the_store(db_url):
     """The half the fixture cannot cover: regenerate the costs from `ko_eval_embeddings` and assert

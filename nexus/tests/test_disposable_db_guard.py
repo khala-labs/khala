@@ -16,7 +16,7 @@ import os
 import pytest
 
 DB_URL = os.getenv("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 
 def _swap_dbname(url: str, name: str) -> str:

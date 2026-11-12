@@ -25,7 +25,6 @@
 
 from __future__ import annotations
 
-import os
 from types import SimpleNamespace
 
 import pytest
@@ -37,8 +36,7 @@ from nexus.search import hybrid
 from nexus.search.evidence_packet import format_for_llm
 from nexus.search.reconcile import packet_for_answer
 
-pytestmark = pytest.mark.skipif(
-    not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 _TENANT = "scope_enrichment_test"
 #: 범위의 두 번째 원소. **비어 있는 테넌트를 일부러 고른다** — 결과가 세 모양에서 같아야

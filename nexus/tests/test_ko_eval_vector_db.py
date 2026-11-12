@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import hashlib
 import math
-import os
 import random
 
 import pytest
@@ -31,7 +30,7 @@ from scripts.ko_eval_vector import (
 )
 
 pytestmark = [
-    pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요"),
+    pytest.mark.db,
 ]
 
 _TENANT = "ko_eval_vec"

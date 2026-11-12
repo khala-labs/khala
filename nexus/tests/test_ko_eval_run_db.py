@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import copy
-import os
 
 import pytest
 
@@ -27,7 +26,7 @@ from scripts.ko_eval_pack import DEFAULT_PACK_DIR
 from nexus.index.bm25 import _get_mecab
 
 pytestmark = [
-    pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요"),
+    pytest.mark.db,
     pytest.mark.skipif(_get_mecab() is None,
                        reason="mecab-ko 없음 — 프로덕션 토크나이저가 아니면 측정하지 않는다"),
 ]

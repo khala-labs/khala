@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 DB_URL = os.getenv("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 _TENANT = "freshness_probe"
 _COL = "embedding_1024"

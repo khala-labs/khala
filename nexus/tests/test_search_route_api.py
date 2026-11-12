@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 from fastapi.testclient import TestClient
@@ -57,8 +56,7 @@ def test_every_search_endpoint_validates_the_route_before_touching_the_db(client
 
 # ── 0건의 원인은 **자기 엔드포인트**가 답한다 (2026-08-13 슬랙 파일럿) ─────────────
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요 — /search 를 끝까지 태우려면 DB 가 있어야 한다")
+@pytest.mark.db
 def test_search_never_runs_the_visibility_query(client, monkeypatch):
     """검색 응답 조립은 DB 진단을 하지 않는다.
 

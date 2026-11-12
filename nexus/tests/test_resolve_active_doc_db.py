@@ -9,7 +9,7 @@ from nexus import db
 from nexus.rid import doc_rid
 
 DB_URL = os.environ.get("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 미설정")
+pytestmark = pytest.mark.db
 
 _T = "acme"
 # source_uri 는 실제 저장형(tenant 접두 포함) = canonical_uri

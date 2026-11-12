@@ -89,12 +89,26 @@ def _selector_event_loop_policy():
 
 
 def pytest_collection_modifyitems(config, items):
-    """integration 마크가 붙은 테스트는 DB URL 없으면 자동 skip."""
+    """DB 가 필요한 테스트는 DB URL 이 없으면 자동 skip — **이 한 곳에서만** 정한다.
+
+    마커는 둘이고 차이는 정리 여부 하나다:
+
+    - `integration` — 테스트 전에 `clean_db` 가 표를 TRUNCATE 한다.
+    - `db` — 표를 비우지 않는다. 데이터를 테스트가 직접 넣고 지운다(예: 미리 적재한 코퍼스를
+      읽는 검색 재현율 테스트는 TRUNCATE 되면 안 된다).
+
+    ⛔ **왜 (2026-11-12 구조 점검).** 예전에는 `integration` 만 여기서 걸렀고, 나머지 67개 파일이
+    저마다 `skipif(not os.getenv("NEXUS_TEST_DB_URL"))` 를 적었다. 규칙이 두 군데라 어느 테스트가
+    정리를 거치는지 파일을 열어야 알 수 있었다. `tests/test_db_tests_use_one_skip_rule.py` 가
+    옛 모양이 돌아오지 않게 한다.
+    """
     if os.getenv("NEXUS_TEST_DB_URL"):
         return
     skip = pytest.mark.skip(reason="NEXUS_TEST_DB_URL이 설정되지 않음 (docker-compose.test.yml 필요)")
     for item in items:
-        if "integration" in item.keywords:
+        # `db` 는 마커로만 본다 — 키워드 집합에는 테스트 이름·매개변수 id 도 들어 있어 "db" 라는
+        # id 하나가 엉뚱한 테스트를 건너뛰게 할 수 있다.
+        if "integration" in item.keywords or item.get_closest_marker("db") is not None:
             item.add_marker(skip)
 
 

@@ -11,13 +11,12 @@ SPEC-nexus-document-lifecycle §4.1(hold) · §4.2(unsupersede, 체인 가드 �
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
 from nexus.rid import chunk_rid
 
-pytestmark = pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 _TENANT = "acme"
 _V1 = "doc_v1v1v1v1v1v1"

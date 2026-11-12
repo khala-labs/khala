@@ -11,14 +11,12 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
 from nexus.health.persistence import SINKS, SinkHealth, describe
 
-pytestmark_db = pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                                   reason="NEXUS_TEST_DB_URL 필요")
+pytestmark_db = pytest.mark.db
 
 
 def _h(**kw) -> SinkHealth:

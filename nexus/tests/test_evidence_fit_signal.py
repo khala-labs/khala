@@ -13,7 +13,6 @@
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 
 import pytest
@@ -65,7 +64,7 @@ def test_a_result_without_confidence_does_not_break_the_signal():
     assert sig.top_distance is None and sig.top_bm25 is None
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 async def test_the_magnitudes_land_in_search_log(db_pool):
     """행에 실제로 앉는가 — 컬럼을 만들어 두고 INSERT 목록에 안 넣은 적이 이 리포에 있다."""
     from nexus import db

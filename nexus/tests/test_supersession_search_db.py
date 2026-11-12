@@ -21,7 +21,7 @@ import pytest
 from nexus.rid import chunk_rid, doc_rid
 
 DB_URL = os.getenv("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 필요 (docker-compose.test.yml)")
+pytestmark = pytest.mark.db
 
 _TENANT = "default"
 _TERM = "supersessionmarker"  # single ascii token → tsquery "'supersessionmarker'"

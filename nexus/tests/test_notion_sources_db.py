@@ -16,7 +16,7 @@ import sys
 import pytest
 
 DB_URL = os.getenv("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 _TENANT = "acme"
 _ROOT = "1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d"

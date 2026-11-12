@@ -49,7 +49,7 @@ async def _seed(tenant: str, text: str) -> None:
         f"c_{doc}", tenant, doc, text)
 
 
-@pytest.mark.skipif(not _DB, reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 @pytest.mark.integration
 async def test_a_needle_is_found_only_in_the_tenant_that_holds_it(clean_db):
     """⭐ **이것이 A86 의 실물이다** — 사실은 있었고, 묻지 않은 테넌트에 있었다."""
@@ -62,7 +62,7 @@ async def test_a_needle_is_found_only_in_the_tenant_that_holds_it(clean_db):
     assert await needles_in_corpus([needle], ["default", "design_docs"], pool) == {needle}
 
 
-@pytest.mark.skipif(not _DB, reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 @pytest.mark.integration
 async def test_the_underscore_escape_holds_against_a_real_query(clean_db):
     """⛔ 안 막으면 `a_b` 가 `axb` 를 찾아내고, 없는 사실이 **있다고** 보고된다."""
@@ -71,7 +71,7 @@ async def test_the_underscore_escape_holds_against_a_real_query(clean_db):
     assert await needles_in_corpus(["a_b"], ["default"], pool) == set()
 
 
-@pytest.mark.skipif(not _DB, reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 @pytest.mark.integration
 async def test_superseded_and_soft_deleted_chunks_do_not_count_as_reach(clean_db):
     """검색이 절대 안 보는 행을 '있다' 로 세면 이 검사가 거짓말을 한다.

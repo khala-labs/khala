@@ -18,7 +18,7 @@ from nexus import db
 from nexus.cli import app
 
 DB_URL = os.environ.get("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 미설정")
+pytestmark = pytest.mark.db
 
 _T = "default"
 

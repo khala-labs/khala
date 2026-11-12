@@ -12,12 +12,10 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
-pytestmark_db = pytest.mark.skipif(
-    not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark_db = pytest.mark.db
 
 _TENANT = "search_explain_test"
 _OTHER = "search_explain_other"

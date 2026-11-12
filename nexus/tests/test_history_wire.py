@@ -9,7 +9,6 @@ U2 는 동작을 바꾸지 않는다. 그래서 여기서 지키는 것은 두 �
 
 from __future__ import annotations
 
-import os
 import sys
 from pathlib import Path
 
@@ -109,8 +108,7 @@ def test_a_malformed_history_is_a_client_error(client):
     assert r.status_code != 500
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요 — 검색을 끝까지 태워야 '변화 0' 을 보인다")
+@pytest.mark.db
 def test_history_changes_nothing_about_the_search(client, monkeypatch):
     """**§4 I1.** 이력을 줘도 검색이 받는 인자는 이력이 없을 때와 같아야 한다.
 
@@ -227,8 +225,7 @@ def test_a2a_history_does_not_leak_into_the_query():
 #
 # 이력을 프롬프트에 넣는 것과 혼동하지 마라 — 들어가는 것은 **질의 하나**다. I3 은 그대로다.
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요 — 답변 경로를 끝까지 태워야 한다")
+@pytest.mark.db
 def test_the_answerer_receives_the_rewritten_query_not_the_ellipsis(client, monkeypatch):
     from nexus.llm.answer import AnswerResult
     from nexus.search.hybrid import SearchHit, SearchResult
@@ -266,8 +263,7 @@ def test_the_answerer_receives_the_rewritten_query_not_the_ellipsis(client, monk
         "답변자가 생략형 원문을 받았다 — 근거를 쥐고도 무엇을 묻는지 모른다고 답하게 된다")
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_without_history_the_answerer_gets_the_query_unchanged(client, monkeypatch):
     """§4 I1. 이력이 없으면 재작성도 없고, 답변자가 받는 것은 오늘과 같다."""
     from nexus.llm.answer import AnswerResult

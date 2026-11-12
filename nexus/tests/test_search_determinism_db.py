@@ -13,14 +13,13 @@ Recall@10 이 0.700~0.775 로 갈렸다. 원인은 `ORDER BY rank_score DESC` �
 
 from __future__ import annotations
 
-import os
 import re
 from pathlib import Path
 
 import pytest
 
 pytestmark = [
-    pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요"),
+    pytest.mark.db,
 ]
 
 _TENANT = "determinism"
