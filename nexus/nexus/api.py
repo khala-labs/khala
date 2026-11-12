@@ -11,7 +11,6 @@ import time
 from contextlib import asynccontextmanager
 from typing import Any
 
-import yaml
 from fastapi import FastAPI, HTTPException, UploadFile, File, Query, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
@@ -160,12 +159,10 @@ app = FastAPI(title="Nexus", version="0.1.0", lifespan=lifespan)
 
 # ── Config ──
 def _load_config() -> dict:
-    from pathlib import Path
-    p = Path("config.yaml")
-    if not p.exists():
-        return {}
-    with open(p, encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+    """`nexus.config.load_config` 의 얇은 별칭 — 테스트가 이 이름을 바꿔 끼운다."""
+    from nexus.config import load_config
+
+    return load_config()
 
 
 # ── Auth (identity layer) ──

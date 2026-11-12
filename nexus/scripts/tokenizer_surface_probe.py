@@ -82,7 +82,7 @@ async def main() -> int:
 
     await db.get_pool()
     try:
-        from nexus.api import _load_config
+        from nexus.config import load_config as _load_config
         from nexus.index.bm25 import MecabTokenizer, SurfaceFormTokenizer, use_tokenizer
         from nexus.providers.embedding import embedding_service_from_config
         from nexus.search import hybrid

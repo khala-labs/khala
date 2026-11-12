@@ -79,7 +79,7 @@ async def run(qpath: Path, top_k: int = 10) -> int:
         — 자유 파라미터를 하나도 만들지 않기 위해서다. 거리만 판정에 쓰고 BM25 는 기록만 한다.
     """
     from nexus import db
-    from nexus.api import _load_config
+    from nexus.config import load_config as _load_config
     from nexus.providers.embedding import embedding_service_from_config
     from nexus.search import hybrid
 

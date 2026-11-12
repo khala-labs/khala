@@ -324,18 +324,10 @@ async def _default_answer_fn(query: str, tenant: str, clearance: str,
     from nexus.search.hybrid import hybrid_search
     from nexus.search.router import determine_route
 
-    def _load_config() -> dict:
-        from pathlib import Path
-
-        import yaml
-        p = Path("config.yaml")
-        if not p.exists():
-            return {}
-        with open(p, encoding="utf-8") as f:
-            return yaml.safe_load(f) or {}
+    from nexus.config import load_config
 
     _t0 = time.time()
-    config = _load_config()
+    config = load_config()
     embedding_svc = embedding_service_from_config(config)
     llm_svc = llm_for(principal)
     pool = await db.get_pool()

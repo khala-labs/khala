@@ -11,7 +11,6 @@ import sys
 from pathlib import Path
 
 import typer
-import yaml
 
 # Windows 콘솔에서 한글(UTF-8) 출력 보장 (codepage 무관)
 if sys.platform == "win32":
@@ -59,11 +58,10 @@ def _run(coro):
 
 
 def _load_config(config_path: str = "config.yaml") -> dict:
-    p = Path(config_path)
-    if not p.exists():
-        return {}
-    with open(p, encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+    """`nexus.config.load_config` 의 얇은 별칭 — 테스트가 이 이름을 바꿔 끼운다."""
+    from nexus.config import load_config
+
+    return load_config(config_path)
 
 
 @app.command("ops-map")

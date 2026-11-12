@@ -59,7 +59,7 @@ async def main(limit: int, budget: float) -> int:
     from anthropic import AsyncAnthropic
 
     from nexus import db
-    from nexus.api import _load_config
+    from nexus.config import load_config as _load_config
     from nexus.llm.citations import validate_citations
     from nexus.llm.prompts import build_prompts
     from nexus.providers.embedding import embedding_service_from_config

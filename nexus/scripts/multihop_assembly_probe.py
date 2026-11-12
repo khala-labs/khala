@@ -69,7 +69,7 @@ async def run_arm(name: str, overrides: dict, groups: dict[str, list[dict]],
                   tenant: list[str]) -> dict:
     """한 실험군을 12질의에 돌린다. 설정은 **이 실행 안에서만** 바뀐다."""
     from nexus import db
-    from nexus.api import _load_config
+    from nexus.config import load_config as _load_config
     from nexus.providers.embedding import embedding_service_from_config
     from nexus.search import hybrid, section_fill
     from nexus.search.evidence_packet import format_for_llm
@@ -276,7 +276,7 @@ async def _run(args) -> int:
     # 단위를 정하는 재료가 정확히 이것이다.
     explanations = []
     if args.diagnose:
-        from nexus.api import _load_config
+        from nexus.config import load_config as _load_config
         from nexus.providers.embedding import embedding_service_from_config
         from nexus.search import hybrid
 

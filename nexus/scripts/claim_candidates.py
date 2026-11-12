@@ -174,7 +174,7 @@ def bucket(n_chunks: int) -> str:
 
 async def _run(args) -> int:
     from nexus import db
-    from nexus.api import _load_config
+    from nexus.config import load_config as _load_config
     from nexus.index.code_source import CodeValueResolver
 
     cfg = _load_config()
