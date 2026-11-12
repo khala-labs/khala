@@ -340,17 +340,3 @@ async def index_chunk_bm25(chunk_rid: str, chunk) -> bool:
     except Exception as e:
         logger.error("bm25_index_failed", chunk_rid=chunk_rid, error=str(e))
         return False
-
-
-async def index_chunks_bm25(chunk_rids_and_chunks: list[tuple[str, object]]) -> int:
-    """복수 청크의 BM25 인덱스 일괄 생성.
-
-    Returns:
-        성공한 청크 수
-    """
-    success = 0
-    for rid, chunk in chunk_rids_and_chunks:
-        if await index_chunk_bm25(rid, chunk):
-            success += 1
-    logger.info("bm25_batch_indexed", total=len(chunk_rids_and_chunks), success=success)
-    return success

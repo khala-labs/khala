@@ -193,7 +193,7 @@ def test_the_trace_really_sees_the_prompt_being_written():
     ran = _nexus_modules_run_by(_write_one_prompt())
     for expected in ("nexus.llm.prompts", "nexus.search.evidence_packet",
                      "nexus.search.provenance", "nexus.search.anchor_status",
-                     "nexus.llm.citations"):
+                     "nexus.search.citation_syntax"):
         assert expected in ran, f"{expected} 가 실행으로 안 잡혔다 — 추적 또는 꾸러미를 의심하라"
 
 

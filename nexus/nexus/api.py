@@ -434,11 +434,6 @@ class IngestRequest(RequestModel):
     tenant: str = "default"
 
 
-class UploadRequest(RequestModel):
-    path: str = "uploads"
-    tenant: str = "default"
-
-
 class OtelAggregateRequest(RequestModel):
     window_minutes: int = 5
     lookback_minutes: int = 60

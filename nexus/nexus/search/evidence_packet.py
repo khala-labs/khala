@@ -22,7 +22,7 @@ from nexus.search.anchor_status import (
     statuses_for_chunks,
 )
 from nexus.search.hybrid import SearchHit
-from nexus.llm.citations import as_quoted_content
+from nexus.search.citation_syntax import as_quoted_content
 from nexus.search.provenance import mark as prov_mark
 from nexus.search.provenance import note_for
 from nexus.search.spans import Candidate

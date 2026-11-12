@@ -51,7 +51,7 @@ ASSEMBLY_MODULES: tuple[str, ...] = (
     "nexus.search.crossrefs",        # 참조 필 데려오기
     "nexus.search.provenance",       # 등급 주석과 표시
     "nexus.search.anchor_status",    # 문서가 부른 코드 이름의 현재 상태 한 줄
-    "nexus.llm.citations",           # 답변 근거 본문의 인용 문법 벗기기(as_quoted_content)
+    "nexus.search.citation_syntax",  # 답변 근거 본문의 인용 문법 벗기기(as_quoted_content)
 )
 
 
