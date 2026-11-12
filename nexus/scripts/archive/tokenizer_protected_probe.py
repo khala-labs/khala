@@ -1,6 +1,9 @@
-"""표면형을 같이 색인하면 조각난 고유명사가 되살아나는가. **재임베딩 없음, 지출 0.**
+"""코퍼스가 자기 이름으로 쓰는 낱말만 보호하면 순위가 오르는가. **재임베딩 없음, 지출 0.**
 
-규칙은 측정 전에 `tests/eval/tokenizer-surface/README.md` 에 박혔다.
+규칙은 측정 전에 `tests/eval/tokenizer-protected-terms/README.md` 에 박혔다.
+
+지표가 다르다: **`broken` 부분집합의 MRR@10 · Recall@3**. Recall@10 은 대조군이 이미 1.000 이라
+천장에 붙어 아무것도 못 본다 — 앞 측정이 그래서 아무 차이도 못 냈다.
 
 **두 실험군은 벡터가 완전히 같다.** 토크나이저는 `tsvector` 에만 쓰이고 임베딩은 원문을 쓰므로,
 라이브 청크를 **임베딩째 복사**해서 BM25 색인만 다르게 건다. 그래서 이 측정은 제품 경로
@@ -9,7 +12,7 @@
 색인과 질의는 **같은 토크나이저**로 돈다(`use_tokenizer`). 한쪽만 바꾼 실행은 그럴듯한 숫자를
 내고 아무 뜻이 없다 (SPEC-nexus-korean-retrieval-eval §4.4).
 
-    docker exec nexus-app python -m scripts.tokenizer_surface_probe \
+    docker exec nexus-app python -m scripts.archive.tokenizer_protected_probe \
         --labels /app/tests/eval/local/a13-round2b-labels.yaml
 """
 
@@ -74,75 +77,93 @@ async def main() -> int:
     ap.add_argument("--labels", required=True)
     args = ap.parse_args()
 
-    from scripts.ko_eval_harness import collapse_to_documents, score_query, verdict
+    from scripts.ko_eval_harness import score_query, verdict
 
     labels = yaml.safe_load(Path(args.labels).read_text(encoding="utf-8"))
     queries = [q for q in labels["queries"] if q.get("answerable")]
-    kinds = {q["id"]: q.get("kind", "all") for q in queries}
 
     await db.get_pool()
     try:
         from nexus.config import load_config as _load_config
-        from nexus.index.bm25 import MecabTokenizer, SurfaceFormTokenizer, use_tokenizer
+        from nexus.index.bm25 import (MecabTokenizer, ProtectedTermTokenizer,
+                              SurfaceFormTokenizer, use_tokenizer)
         from nexus.providers.embedding import embedding_service_from_config
         from nexus.search import hybrid
 
         svc, cfg = embedding_service_from_config(), _load_config()
-        arms = {"tok_a": MecabTokenizer(), "tok_b": SurfaceFormTokenizer()}
-        print(f"질문 {len(queries)}건 · 실험군 {list(arms)} · 임베딩 복사(재계산 없음) · LLM 0회")
 
-        results: dict[str, dict] = {}
+        # 보호 목록을 **코퍼스에서 유도한다** — 문서 제목 + 섹션 경로.
+        from nexus.index.bm25 import compound_names
+        names = await db.fetch_all(
+            "SELECT DISTINCT d.title AS t FROM documents d WHERE d.tenant=$1 AND d.status='active' "
+            "UNION SELECT DISTINCT c.section_path FROM chunks c WHERE c.tenant=$1 "
+            "AND c.status='active'", SOURCE)
+        terms = sorted({w for r in names for w in compound_names(r["t"] or "")})
+        print(f"유도된 보호 용어 {len(terms)}개: {terms[:14]}{' …' if len(terms) > 14 else ''}")
+
+        # 규칙 1: 처치가 닿는 부분집합 = 질의에 그 낱말이 실제로 든 질문.
+        broken_ids = {q["id"] for q in queries
+                      if any(t in q["query"].lower() for t in terms)}
+        print(f"`broken` 부분집합 {len(broken_ids)}/{len(queries)}문항: {sorted(broken_ids)}")
+
+        arms = {"tok_a": MecabTokenizer(),
+                "tok_b": ProtectedTermTokenizer(terms),
+                "tok_c": SurfaceFormTokenizer()}
+        results: dict[str, list] = {}
         try:
             for arm, tok in arms.items():
                 await build(arm)
-                cd = {r["rid"]: r["source_uri"].split(":", 1)[-1] for r in await db.fetch_all(
-                    "SELECT rid, source_uri FROM chunks WHERE tenant=$1", arm)}
                 with use_tokenizer(tok):
                     n = await index_bm25(arm)
-                    leg, hyb = [], []
+                    hyb = []
                     for q in queries:
-                        hits, _ = await hybrid._bm25_search(q["query"], arm, CLEARANCE, 20)
-                        hits = [(h.rid, h.rank) for h in hits]  # _bm25_search 는 이제 LegHit 을 낸다
-                        leg.append(score_query(q["id"],
-                                               collapse_to_documents(hits, cd), q["gold"]))
                         r = await hybrid.hybrid_search(q["query"], tenant=arm,
                                                        clearance=CLEARANCE, top_k=10,
                                                        embedding_svc=svc, config=cfg)
                         docs = list(dict.fromkeys(
                             h.source_uri.split(":", 1)[-1] for h in r.hits))
                         hyb.append(score_query(q["id"], docs, q["gold"]))
-                results[arm] = {"leg": leg, "hyb": hyb}
+                results[arm] = hyb
 
-                def _r(scores, kind=None):
-                    sel = [s for s in scores if kind is None or kinds[s.qid] == kind]
-                    return sum(s.recall for s in sel) / len(sel) if sel else 0.0
-                print(f"  {arm} ({tok.id}) BM25 색인 {n} · hybrid R@10 전체 {_r(hyb):.3f} · "
-                      f"파편 {_r(hyb,'fragment'):.3f} · 대조군 {_r(hyb,'control'):.3f}"
-                      f"   (경로 {_r(leg):.3f})", flush=True)
+                def agg(scores, ids=None, k=None):
+                    sel = [s for s in scores if ids is None or s.qid in ids]
+                    if not sel:
+                        return 0.0, 0.0
+                    mrr = sum(s.rr for s in sel) / len(sel)
+                    rec = sum(s.recall for s in sel) / len(sel)
+                    return rec, mrr
+                r_all, _ = agg(hyb)
+                r_b, m_b = agg(hyb, broken_ids)
+                print(f"  {arm} ({tok.id:20}) 색인 {n} · 전체 R@10 {r_all:.3f} · "
+                      f"broken MRR@10 {m_b:.3f} · broken R@10 {r_b:.3f}", flush=True)
 
-            def rec(scores, kind):
-                sel = [s for s in scores if kinds[s.qid] == kind]
-                return sum(s.recall for s in sel) / len(sel) if sel else 0.0
-
-            a, b = results["tok_a"]["hyb"], results["tok_b"]["hyb"]
-            wins = loss = tie = 0
-            by = {s.qid: s for s in a}
-            for s in b:
-                base = by[s.qid]
-                if s.recall != base.recall:
-                    wins, loss = ((wins + 1, loss) if s.recall > base.recall
-                                  else (wins, loss + 1))
-                elif s.rr != base.rr:
-                    wins, loss = (wins + 1, loss) if s.rr > base.rr else (wins, loss + 1)
-                else:
-                    tie += 1
-            v = verdict(wins, loss, tie, name_a="표면형", name_b="현직")
-            up = (rec(b, "fragment") > rec(a, "fragment")
-                  or sum(s.recall for s in b) > sum(s.recall for s in a))
-            keep = rec(b, "control") >= rec(a, "control")
-            print(f"\n  승 {wins} · 패 {loss} · 무 {tie} — {v.decision}")
-            print(f"  규칙 2: ①이득 {'O' if up else 'X'} · ②대조군 무손실 "
-                  f"{'O' if keep else 'X'} → {'채택 후보' if (up and keep) else '기각'}")
+            base = results["tok_a"]
+            def mrr(scores, ids):
+                sel = [s for s in scores if s.qid in ids]
+                return sum(s.rr for s in sel) / len(sel) if sel else 0.0
+            def rec_all(scores):
+                return sum(s.recall for s in scores) / len(scores)
+            print(chr(10) + "사전등록 규칙 3 대조:")
+            for arm in ("tok_b", "tok_c"):
+                h = results[arm]
+                up = mrr(h, broken_ids) > mrr(base, broken_ids)
+                keep = rec_all(h) >= rec_all(base)
+                wins = loss = tie = 0
+                by = {s.qid: s for s in base}
+                for s in h:
+                    b0 = by[s.qid]
+                    if s.recall != b0.recall:
+                        wins, loss = ((wins + 1, loss) if s.recall > b0.recall
+                                      else (wins, loss + 1))
+                    elif s.rr != b0.rr:
+                        wins, loss = (wins + 1, loss) if s.rr > b0.rr else (wins, loss + 1)
+                    else:
+                        tie += 1
+                v = verdict(wins, loss, tie, name_a=arm, name_b="현직")
+                print(f"  {arm}: ①broken MRR 상승 {'O' if up else 'X'} · "
+                      f"②전체 Recall 무손실 {'O' if keep else 'X'} → "
+                      f"{'채택 후보' if (up and keep) else '기각'}"
+                      f"   (승 {wins} · 패 {loss} · 무 {tie} — {v.decision})")
         finally:
             for arm in arms:
                 await db.execute("DELETE FROM chunks WHERE tenant=$1", arm)
