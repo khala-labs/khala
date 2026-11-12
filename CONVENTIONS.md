@@ -59,9 +59,8 @@ is stamped. `GLOSSARY.md` lists what is frozen and why.
   name. Adding a tool means adding a lowercase directory and a row in the
   README tool map. (Exception: shared non-tool directories such as `assets/`
   are also lowercase but are not tools and do not get a README entry.)
-- Within a tool, follow that tool's own file-naming convention (e.g. Observer
-  uses kebab-case TypeScript files; Nexus uses Python module
-  conventions).
+- Within a tool, follow that tool's own file-naming convention (e.g. Nexus
+  uses Python module conventions).
 
 ## Versioning
 

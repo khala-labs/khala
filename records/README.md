@@ -4,8 +4,8 @@
 
 | 이름 | 설명 | 작성 방식 |
 | :--- | :--- | :--- |
-| `specs/` | `README.md`, `backstop-debt.yaml`, `retractions.yaml`을 포함하는 설계 사양서(54개의 `SPEC-*.md`) | Arbiter가 작성 및 날인하며, 철회 목록과 백스톱 목록은 수작업으로 작성합니다. |
-| `adr/` | `README.md`를 포함하는 아키텍처 결정 기록(10개의 `ADR-*.md`) | Arbiter가 작성 및 날인합니다. |
+| `specs/` | `README.md`, `backstop-debt.yaml`, `retractions.yaml`을 포함하는 설계 사양서(`SPEC-*.md`) | Arbiter가 작성 및 날인하며, 철회 목록과 백스톱 목록은 수작업으로 작성합니다. |
+| `adr/` | `README.md`를 포함하는 아키텍처 결정 기록(`ADR-*.md`) | Arbiter가 작성 및 날인합니다. |
 | `.reviews/` | 비평 사이드카(`SPEC-*.md`, `ADR-*.md`) 및 disposition 입력 파일(`dispositions-*.json`) | 사이드카는 Arbiter의 비평 단계에서 생성되며, disposition 파일은 수작업으로 작성되어 `arbiter approve --dispositions`가 읽습니다. |
 | `INDEX.md` | 모든 SPEC 및 ADR의 상태 색인 | Arbiter가 생성하며, 수작업으로 편집하지 않습니다. |
 | `governance/` | `integrity-manifest.txt`(CI가 날인 본문을 검증하는 ID 목록) 및 `open-items.yaml` | CI `governance` 작업의 `scripts/ledger_integrity.py`가 읽습니다. |

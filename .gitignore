@@ -3,7 +3,7 @@
 __pycache__/
 *.pyc
 
-# Editable-install / build metadata (e.g. adept/src/khala_adept.egg-info from `pip install -e`)
+# Editable-install / build metadata (from `pip install -e`)
 *.egg-info/
 
 # arbiter transient gate runtime state (active spec marker + exempt log)

@@ -188,9 +188,9 @@ jobs:
     # line) without anyone seeing it.
     #
     # Scope is the whole repo, not the three directories `task lint:ruff` used to name:
-    # adept, adept-web and the root `tests/` were unlinted purely because nobody listed
-    # them. ruff resolves config per file, so nexus keeps line-length 120 and the rest
-    # take the root ruff.toml's 100.
+    # the root `tests/` was unlinted purely because nobody listed it. ruff resolves
+    # config per file, so nexus keeps line-length 120 and the rest take the root
+    # ruff.toml's 100.
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
