@@ -72,5 +72,5 @@ All tools across the Khala ecosystem enforce **calibration** as an architectural
 
 Khala enforces a decoupled hub-and-spoke topology: producer tools never invoke each other directly. All interactions flow through the **Khala substrate**:
 - **Archon** and **Arbiter** publish verified constants and approved specifications into the substrate.
-- [**Observer**](/tools/observer/) queries the substrate to evaluate pull requests against approved specifications and runtime traces.
+- **Observer** queries the substrate to evaluate pull requests against approved specifications and runtime traces.
 - [**Archon**](/tools/archon/) provides a deterministic API for invariant lookup.

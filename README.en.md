@@ -47,8 +47,6 @@ information drift apart in an AI-era org, and each one is a Khala surface:
 |---|---|---|
 | **What the org knows** — docs, specs, know-how | Single governed substrate, dual access interfaces: humans (web) and agents (MCP/A2A) read the same governed corpus — same approvals, same current version, same citations. | [Nexus](./nexus) |
 | **Why it was built** — design decisions | Architecture decision recorder: choices coding agents make by the hundred are recorded at zero marginal cost, and approval stays a named human's accountable act. | [Arbiter](./arbiter) |
-| **What the system is doing** — traces, metrics, logs | Judgment context, not another dashboard: telemetry joined with approved knowledge (specs, runbooks, decisions) into evidence for review and troubleshooting. | [Observer](./observer) over Nexus + OTel |
-| **Who still understands it** — comprehension | Cognitive-debt ledger: total deployment artifacts are the denominator (what must be known), vouches are the numerator (what a named human can still explain) — the gap becomes a number you can repay. | [Adept](./adept) |
 
 The first row is where a team starts — everyday value. The last row is why it matters
 more every year: as agent output grows, an org that doesn't measure comprehension
@@ -58,10 +56,9 @@ doesn't even know what it no longer knows.
 
 As AI becomes the producer, three debts accumulate:
 
-- **Technical debt** — artifacts pile up faster than they are maintained → **Probe** + **Observer**.
+- **Technical debt** — artifacts pile up faster than they are maintained.
 - **Intent debt** — *why* a decision was made is lost → **Arbiter**.
-- **Cognitive debt** — *nobody fully understands the system* → **Adept** measures it as vouch
-  coverage against the shared substrate, and drives its repayment.
+- **Cognitive debt** — *nobody fully understands the system*.
 
 The reframe is recorded in [ADR-0002](records/adr/ADR-0002-reframe-system-command-debt.md).
 
@@ -80,15 +77,6 @@ The tools are grouped by status. The dates indicate the last functional change i
 | Tool | Role | Status (date) | Directory link |
 | --- | --- | --- | --- |
 | **Arbiter** | ADR/SDD governance MCP — intercepts Write/Edit/MultiEdit when the PreToolUse hook is registered (Bash shell execution not gated); publishes approved specs to Nexus. | Still used as the approval gate for ADRs and SPECs in this repository; last code change 2026-09-05 | [khala-labs/arbiter](https://github.com/khala-labs/arbiter) |
-
-### Stopped experiments
-
-| Tool | Role | Status (date) | Directory link |
-| --- | --- | --- | --- |
-| **Observer** | Platform-aware PR analyzer — PR scope, API spec lint/diff, review checklists; consumes Nexus. | Last code change 2026-07-11; later commits touched only documentation, terminology and formatting | [khala-labs/observer](https://github.com/khala-labs/observer) |
-| **Probe** | Mutation-driven test-quality harness — catches what advisory review misses. | Last feature change 2026-07-11; later commits were lint, dependency bounds, terminology and formatting | [khala-labs/probe](https://github.com/khala-labs/probe) |
-| **Adept** | Cognitive-debt meter — graded, grounded comprehension vouches; coverage + orphan hotlist. | Last feature change 2026-07-02; later commits were lint, dependency bounds, terminology and formatting | [khala-labs/adept](https://github.com/khala-labs/adept) |
-| **Adept web** | Team surface for the same meter — browser UI + server-backed (file or Postgres). | No functional change since 2026-08-02 | [khala-labs/adept](https://github.com/khala-labs/adept) (`adept-web/`) |
 
 The rest of the repository is [`./docs`](./docs), an Astro Starlight ecosystem documentation site rather than a tool.
 

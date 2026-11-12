@@ -17,9 +17,7 @@ const ORDER = [
   'tools/nexus',
   'tools/nexus-web',
   'tools/archon',
-  'tools/observer',
   'tools/arbiter',
-  'tools/probe',
   'contributing',
 ];
 const rank = (id: string) => {

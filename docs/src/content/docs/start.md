@@ -44,10 +44,7 @@ To stop: `task down`. To update after `git pull`: `task update` (rebuilds **and*
 | Engineering Objective | Recommended Tool | Verification Mechanism |
 |---|---|---|
 | Query codebase and domain specs with citable grounding | [Nexus](/tools/nexus/) / [Archon](/tools/archon/) | Hybrid retrieval (BM25 + Vector) & static invariant checking |
-| Ground PR impact analysis & incident triage in live telemetry | [Observer](/tools/observer/) | Nexus knowledge substrate + OpenTelemetry trace correlation |
 | Establish accountable architectural review gates | [Arbiter](/tools/arbiter/) | Pre-implementation specification review & cryptographic content hashing |
-| Measure empirical fault-detection capabilities of test suites | [Probe](/tools/probe/) | Mutation testing harness via AST manipulation |
-| Quantify organizational comprehension deficit against codebase | [Adept](/tools/adept/) | Vouch coverage measurement over knowledge corpus |
 
 ## 5-minute tour
 [What is Khala?](/) → [Philosophy](/philosophy/) → [Ecosystem](/ecosystem/)
