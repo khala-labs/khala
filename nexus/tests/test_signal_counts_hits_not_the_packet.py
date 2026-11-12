@@ -59,7 +59,25 @@ def test_the_attribution_decision_is_written_down_where_it_is_made():
     다시 난다(목록을 TEXT 필드에 넣는 그 경로다)."""
     api = pathlib.Path(signals.__file__).parents[1] / "api.py"
     src = api.read_text(encoding="utf-8")
-    # 셋이다 — `/search` · `/search/answer` · **스트리밍**. 셋째가 빠져 있어서 웹 채팅이
-    # 컷오버가 연 교차 코퍼스를 못 읽었던 적이 있다(api.py 1098 주석).
-    assert src.count("req.tenant = principal.tenant") == 3, "귀속이 세 경로에 다 있어야 한다"
+    # 귀속을 정하는 자리는 **하나**다(`_read_scope_from_request`) — 세 경로 `/search` ·
+    # `/search/answer` · **스트리밍** 이 그것을 부른다(SPEC-nexus-shared-answer-pipeline §4.1).
+    # 셋째가 빠져 있어서 웹 채팅이 컷오버가 연 교차 코퍼스를 못 읽었던 적이 있다.
+    assert src.count("req.tenant = principal.tenant") == 1, "귀속을 정하는 자리가 하나가 아니다"
     assert "귀속" in src
+    from nexus import api as api_module
+
+    for handler in (api_module.search, api_module.search_answer,
+                    api_module.search_answer_stream):
+        names, seen = set(), set()
+
+        def walk(code):
+            if id(code) in seen:
+                return
+            seen.add(id(code))
+            names.update(code.co_names)
+            for c in code.co_consts:
+                if hasattr(c, "co_names"):
+                    walk(c)
+
+        walk(handler.__code__)
+        assert "_read_scope_from_request" in names, f"{handler.__name__} 에 귀속이 없다"

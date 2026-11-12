@@ -97,6 +97,99 @@ class AnswerResult:
     search_fingerprint: str = ""
 
 
+@dataclass
+class EvidenceView:
+    """답변 근거를 **응답 모양으로** 바꾼 것 — 두 HTTP 답변 경로가 같은 함수로 만든다.
+
+    ⛔ **왜 (SPEC-nexus-shared-answer-pipeline §4.3).** 스트림이 이 변환을 `api.py` 안에 따로
+    갖고 있었고, 두 사본이 갈렸다: 출처 항목은 한쪽이 `approved_hash`, 다른 쪽이 `doc_title`
+    을 냈고, 관측 간선의 호출 수는 `calls` 와 `call_count` 로 이름이 달랐으며, 합성 자료 표시는
+    한동안 스트림에서만 빠졌다. 이제 사본이 없다. 갈렸던 키는 **둘 다** 싣는다 — 어느 소비자도
+    읽던 키를 잃지 않는다(웹 클라이언트는 `call_count` 를 읽는다).
+    """
+
+    snippets: list[dict]
+    n_stale: int
+    graph_findings: dict | None
+    provenance: list[dict]
+
+
+def abstention(packet: EvidencePacket) -> tuple[bool, str]:
+    """기권 판정 — 답변 근거가 0건이면 기권한다. 두 HTTP 답변 경로가 같은 함수로 정한다."""
+    return (True, "no_evidence") if not packet.snippets else (False, "")
+
+
+def evidence_view(packet: EvidencePacket) -> EvidenceView:
+    """답변 근거 스니펫 · 그래프 소견 · 출처 목록. 순위(`_ranked`)는 히트를 가진 호출자가 단다."""
+    # Evidence snippets 변환 (updated_at 은 신선도 판정용 datetime 으로 넣었다가 아래서 판정 후 ISO 직렬화)
+    snippets = [
+        {
+            "chunk_rid": s.chunk_rid,
+            "doc_title": s.doc_title,
+            "section_path": s.section_path,
+            "source_uri": s.source_uri,
+            "text": s.text,
+            "score": s.score,
+            "doc_type": s.doc_type,  # 차원-A 타입(S3) — 웹 클라이언트 타입 배지용
+            # 등급은 응답까지 간다 (ADR-0010 hop 5) — 배지를 달 수 있어야 한다.
+            "provenance_tier": getattr(s, "provenance_tier", "authored"),
+            # API 표면 둘이 같은 사실을 낸다 (api.py 의 같은 자리 주석 참조).
+            "provenance_mark": tier_mark(getattr(s, "provenance_tier", "authored")),
+            # 이 문단이 부른 코드 이름의 현재 상태. 앵커가 없으면 `None` 이고, 그때 응답은
+            # 오늘과 같은 모양이다. 표현계층이 셈을 다시 하지 않도록 **여기서 요약해** 보낸다.
+            "code_anchors": summarize(getattr(s, "code_anchors", []),
+                                      getattr(s, "code_deleted", []),
+                                      getattr(s, "code_scan", None)),
+            # CRM 마커(`nexus/labels.py`) — 등급과 같은 자리, 같은 이유로 응답까지 간다.
+            # 합성 자료임을 답변 근거 옆에 못 달면, 지어낸 절차가 실제 운영 문서와 같은 얼굴로
+            # 인용된다. 검색이 잘될수록 나쁜 종류의 결함이다.
+            "labels": list(getattr(s, "labels", ()) or ()),
+            "synthetic": SYNTHETIC_LABEL in (getattr(s, "labels", ()) or ()),
+            "updated_at": s.updated_at,
+        }
+        for s in packet.snippets
+    ]
+    # 답변 근거 신선도 판정(결정론적) — TTL 초과 답변 근거를 스니펫별 staleness + 답변레벨 n_stale 로.
+    snippets, n_stale = annotate_staleness(
+        snippets, datetime.now(timezone.utc), _load_staleness_ttl())
+    for sn in snippets:                      # datetime → ISO 문자열(응답 직렬화용)
+        _ua = sn.get("updated_at")
+        sn["updated_at"] = _ua.isoformat() if _ua else None
+
+    # Graph findings 변환 (diff_flags 포함)
+    graph_findings = None
+    if packet.graph:
+        graph_findings = {
+            "center": packet.graph.center_name,
+            "designed_edges": [
+                {"type": e.edge_type, "from": e.from_name, "to": e.to_name,
+                 "confidence": e.confidence, "source_category": e.source_category}
+                for e in packet.graph.edges
+            ],
+            "observed_edges": [
+                {"type": o.edge_type, "from": o.from_name, "to": o.to_name,
+                 "calls": o.call_count, "call_count": o.call_count,
+                 "error_rate": o.error_rate,
+                 "latency_p95": o.latency_p95, "trace_query_ref": o.trace_query_ref}
+                for o in packet.graph.observed_edges
+            ],
+        }
+
+    # Provenance (source_version 포함)
+    provenance = [
+        {
+            "doc_rid": p.doc_rid,
+            "source_uri": p.source_uri,
+            "source_version": p.source_version,
+            "approved_hash": p.approved_hash,
+            "doc_title": p.doc_title,
+        }
+        for p in packet.provenance
+    ]
+    return EvidenceView(snippets=snippets, n_stale=n_stale,
+                        graph_findings=graph_findings, provenance=provenance)
+
+
 def _shown_query(query: str, user_query: str | None) -> str:
     """모델이 **질의 자리에서 실제로 본** 텍스트. 숫자 근거검증의 대조 대상이다.
 
@@ -151,72 +244,13 @@ async def generate_answer(
         search_fingerprint=getattr(packet, "search_fingerprint", "") or "",
     )
 
-    # Evidence snippets 변환 (updated_at 은 신선도 판정용 datetime 으로 넣었다가 아래서 판정 후 ISO 직렬화)
-    snippets = [
-        {
-            "chunk_rid": s.chunk_rid,
-            "doc_title": s.doc_title,
-            "section_path": s.section_path,
-            "source_uri": s.source_uri,
-            "text": s.text,
-            "score": s.score,
-            "doc_type": s.doc_type,  # 차원-A 타입(S3) — 웹 클라이언트 타입 배지용
-            # 등급은 응답까지 간다 (ADR-0010 hop 5) — 배지를 달 수 있어야 한다.
-            "provenance_tier": getattr(s, "provenance_tier", "authored"),
-            # API 표면 둘이 같은 사실을 낸다 (api.py 의 같은 자리 주석 참조).
-            "provenance_mark": tier_mark(getattr(s, "provenance_tier", "authored")),
-            # 이 문단이 부른 코드 이름의 현재 상태. 앵커가 없으면 `None` 이고, 그때 응답은
-            # 오늘과 같은 모양이다. 표현계층이 셈을 다시 하지 않도록 **여기서 요약해** 보낸다.
-            "code_anchors": summarize(getattr(s, "code_anchors", []),
-                                      getattr(s, "code_deleted", []),
-                                      getattr(s, "code_scan", None)),
-            # CRM 마커(`nexus/labels.py`) — 등급과 같은 자리, 같은 이유로 응답까지 간다.
-            # 합성 자료임을 답변 근거 옆에 못 달면, 지어낸 절차가 실제 운영 문서와 같은 얼굴로
-            # 인용된다. 검색이 잘될수록 나쁜 종류의 결함이다.
-            "labels": list(getattr(s, "labels", ()) or ()),
-            "synthetic": SYNTHETIC_LABEL in (getattr(s, "labels", ()) or ()),
-            "updated_at": s.updated_at,
-        }
-        for s in packet.snippets
-    ]
-    # 답변 근거 신선도 판정(결정론적) — TTL 초과 답변 근거를 스니펫별 staleness + 답변레벨 n_stale 로.
-    snippets, result.n_stale = annotate_staleness(
-        snippets, datetime.now(timezone.utc), _load_staleness_ttl())
-    for sn in snippets:                      # datetime → ISO 문자열(응답 직렬화용)
-        _ua = sn.get("updated_at")
-        sn["updated_at"] = _ua.isoformat() if _ua else None
-    result.evidence_snippets = snippets
+    view = evidence_view(packet)
+    result.evidence_snippets, result.n_stale = view.snippets, view.n_stale
+    result.graph_findings, result.provenance = view.graph_findings, view.provenance
 
-    # Graph findings 변환 (diff_flags 포함)
-    if packet.graph:
-        result.graph_findings = {
-            "center": packet.graph.center_name,
-            "designed_edges": [
-                {"type": e.edge_type, "from": e.from_name, "to": e.to_name,
-                 "confidence": e.confidence, "source_category": e.source_category}
-                for e in packet.graph.edges
-            ],
-            "observed_edges": [
-                {"type": o.edge_type, "from": o.from_name, "to": o.to_name,
-                 "calls": o.call_count, "error_rate": o.error_rate,
-                 "latency_p95": o.latency_p95, "trace_query_ref": o.trace_query_ref}
-                for o in packet.graph.observed_edges
-            ],
-        }
-
-    # 답변 근거 문서 부채 — 응답까지 간다(표현계층이 배지를 달 수 있어야 한다).
+    # 답변 근거 문서 부채 — 계산은 하지만 아직 어느 API 표면도 내보내지 않는다
+    # (SPEC-nexus-shared-answer-pipeline §8 의 열린 질문).
     result.doc_debts = summarize_debt(getattr(packet, "debts", []))
-
-    # Provenance (source_version 포함)
-    result.provenance = [
-        {
-            "doc_rid": p.doc_rid,
-            "source_uri": p.source_uri,
-            "source_version": p.source_version,
-            "approved_hash": p.approved_hash,
-        }
-        for p in packet.provenance
-    ]
 
     if not narrate:
         # ── 여기까지가 검색 근거다. 생성하는 버전과 **같은 코드**가 만들었다 ──
@@ -231,7 +265,7 @@ async def generate_answer(
     # LLM 호출
     if not packet.snippets:
         result.answer = "제공된 문서에서 해당 정보를 찾을 수 없습니다."
-        result.abstained, result.abstain_reason = True, "no_evidence"
+        result.abstained, result.abstain_reason = abstention(packet)
         if spans is not None:
             # 모양은 **답변일 때만** 잰다 — 여기 문자열은 고정 안내문이라 세면 상수를 센다.
             spans.add_answer(

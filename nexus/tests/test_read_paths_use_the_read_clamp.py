@@ -94,7 +94,9 @@ def _post(seen, path, body):
     return seen["tenant"]
 
 
-PATHS = ["/search", "/search/answer"]
+# 스트림이 셋째다 — 웹 채팅이 타는 경로이고, 범위 목록을 마지막으로 받은 곳이다
+# (SPEC-nexus-shared-answer-pipeline §6).
+PATHS = ["/search", "/search/answer", "/search/answer/stream"]
 
 
 @pytest.mark.parametrize("path", PATHS)

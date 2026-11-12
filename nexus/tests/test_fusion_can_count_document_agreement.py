@@ -172,8 +172,13 @@ def test_the_answer_paths_hand_the_flag_to_the_search_and_echo_it():
     from nexus import api
 
     src = pathlib.Path(api.__file__).read_text(encoding="utf-8")
-    assert src.count("fusion_doc_agreement=req.fusion_doc_agreement") == 2, \
-        "답변 경로 둘이 검색에 「켰는가」를 안 넘긴다 — 결과 객체가 조용히 `False` 가 된다"
+    # 넘기는 자리는 **하나**다(`_answer_search_opts`) — 두 답변 경로가 그것을 부른다
+    # (SPEC-nexus-shared-answer-pipeline). 사본이 둘이던 때는 이 수가 2 였다.
+    assert src.count("fusion_doc_agreement=req.fusion_doc_agreement") == 1, \
+        "검색에 「켰는가」를 넘기는 자리가 하나가 아니다 — 사본이 돌아왔다"
+    for handler in (api.search_answer, api.search_answer_stream):
+        assert _calls(handler, "_answer_search_opts"), \
+            f"{handler.__name__} 가 검색에 「켰는가」를 안 넘긴다 — 결과 객체가 조용히 `False` 가 된다"
     assert src.count('"fusion_doc_agreement": req.fusion_doc_agreement,') == 2, \
         "응답 둘이 같은 식을 안 읽는다"
 
@@ -196,3 +201,20 @@ def test_the_record_carries_what_the_search_did():
     assert _sig(on).fusion_doc_agreement is True
     assert _sig(off).fusion_doc_agreement is False
     assert _sig(_OldDouble()).fusion_doc_agreement is None
+
+
+def _calls(func, name: str) -> bool:
+    """`func`(중첩 함수 포함)가 `name` 을 부르는가 — 스트리밍 핸들러는 본체가 중첩 함수다."""
+    seen, out = set(), set()
+
+    def walk(code):
+        if id(code) in seen:
+            return
+        seen.add(id(code))
+        out.update(code.co_names)
+        for c in code.co_consts:
+            if hasattr(c, "co_names"):
+                walk(c)
+
+    walk(func.__code__)
+    return name in out
