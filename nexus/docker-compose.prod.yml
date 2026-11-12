@@ -27,7 +27,7 @@ services:
 
   # 임베딩 모델 자동 pull (한 번 실행 후 종료). config.yaml embedding.model 과 일치해야 한다.
   nexus-ollama-init:
-    image: ollama/ollama
+    image: ollama/ollama:0.40.16
     container_name: nexus-ollama-init
     depends_on:
       nexus-ollama:
