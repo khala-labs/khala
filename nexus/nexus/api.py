@@ -651,7 +651,7 @@ async def search(req: SearchRequest, principal: Principal = Depends(get_principa
         if result.graph:
             diff_items = []
             try:
-                diff_items = await graph_repo.get_diff(req.tenant)
+                diff_items = await graph_repo.get_diff(req.tenant, req.classification_max)
             except Exception:
                 pass
             graph_findings = {
@@ -1260,9 +1260,9 @@ async def get_diff(
     principal: Principal = Depends(get_principal),
 ) -> NexusResponse:
     """설계-관측 diff 보고서 (evidence 포함)."""
-    tenant, _ = effective_scope(principal, tenant, None)
+    tenant, clearance = effective_scope(principal, tenant, None)
     try:
-        report = await run_diff(tenant=tenant, flag_filter=flag_filter)
+        report = await run_diff(tenant=tenant, flag_filter=flag_filter, clearance=clearance)
 
         diffs_with_evidence = []
         for d in report.diffs:
@@ -1281,17 +1281,22 @@ async def get_diff(
                 "observed_evidence": [],
             }
 
-            # 설계 edge의 evidence (chunk snippet)
+            # 설계 edge의 evidence (chunk snippet) — `/graph` 의 증거 조회와 **같은 base_filter**
+            # (SPEC-nexus-graph-scope-filter §4.3). 여기만 LEFT JOIN 에 필터가 없어서 호출자
+            # 등급 위의 청크 본문이 diff 증거로 나갈 수 있었다(2026-11-12 구조 점검).
             if d.edge_rid:
                 evi_rows = await db.fetch_all(
                     """
                     SELECT c.chunk_text, c.section_path, d.title as doc_title
                     FROM evidence ev
-                    LEFT JOIN chunks c ON ev.evidence_rid = c.rid
-                    LEFT JOIN documents d ON c.doc_rid = d.rid
+                    JOIN chunks c ON ev.evidence_rid = c.rid
+                    JOIN documents d ON c.doc_rid = d.rid
                     WHERE ev.subject_rid = $1 AND ev.status = 'active'
+                      AND c.tenant = $2 AND c.classification <= $3::classification_level
+                      AND c.is_quarantined = false AND c.status = 'active'
+                      AND d.status = 'active'
                     """,
-                    d.edge_rid,
+                    d.edge_rid, tenant, clearance,
                 )
                 for er in evi_rows:
                     item["designed_evidence"].append({
@@ -1303,8 +1308,9 @@ async def get_diff(
             # 관측 edge의 evidence (trace ref)
             if d.observed_edge_rid:
                 obs_row = await db.fetch_one(
-                    "SELECT sample_trace_ids, trace_query_ref FROM observed_edges WHERE rid = $1",
-                    d.observed_edge_rid,
+                    "SELECT sample_trace_ids, trace_query_ref FROM observed_edges "
+                    "WHERE rid = $1 AND tenant = $2",
+                    d.observed_edge_rid, tenant,
                 )
                 if obs_row:
                     item["observed_evidence"] = {

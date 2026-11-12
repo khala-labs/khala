@@ -29,6 +29,7 @@ class DiffReport:
 async def run_diff(
     tenant: str = "default",
     flag_filter: str | None = None,
+    clearance: str | None = None,
 ) -> DiffReport:
     """설계-관측 diff 실행.
 
@@ -61,13 +62,16 @@ async def run_diff(
     # Diff 조회 (v_edge_diff 뷰)
     pool = await db.get_pool()
     graph_repo = PostgresGraphRepository(pool)
+    # 태깅은 **테넌트 전체**(등급 무관)로 한다 — 호출자의 등급에 따라 플래그가 달라지면 안 된다.
+    # 응답으로 나가는 목록은 호출자의 등급으로 다시 거른다(`clearance` 가 주어질 때).
     all_diffs = await graph_repo.get_diff(tenant)
+    visible = all_diffs if clearance is None else await graph_repo.get_diff(tenant, clearance)
 
     # 필터 적용
     if flag_filter:
-        report.diffs = [d for d in all_diffs if d.flag == flag_filter]
+        report.diffs = [d for d in visible if d.flag == flag_filter]
     else:
-        report.diffs = all_diffs
+        report.diffs = visible
 
     # quality_flags 태깅
     await _tag_quality_flags(all_diffs, tenant)
@@ -93,9 +97,9 @@ async def _tag_quality_flags(diffs: list[DiffItem], tenant: str) -> None:
                     array_remove(quality_flags, 'doc_only'), 'doc_only'
                 ),
                 updated_at = $1
-                WHERE rid = $2
+                WHERE rid = $2 AND tenant = $3
                 """,
-                now, diff.edge_rid,
+                now, diff.edge_rid, tenant,
             )
 
         elif diff.flag == "observed_only" and diff.observed_edge_rid:
@@ -106,7 +110,7 @@ async def _tag_quality_flags(diffs: list[DiffItem], tenant: str) -> None:
                     array_remove(quality_flags, 'observed_only'), 'observed_only'
                 ),
                 updated_at = $1
-                WHERE rid = $2
+                WHERE rid = $2 AND tenant = $3
                 """,
-                now, diff.observed_edge_rid,
+                now, diff.observed_edge_rid, tenant,
             )
