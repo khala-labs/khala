@@ -571,9 +571,12 @@ def status() -> None:
         if db_ok:
             docs = await db.fetch_val("SELECT COUNT(*) FROM documents WHERE status = 'active'") or 0
             chunks = await db.fetch_val("SELECT COUNT(*) FROM chunks WHERE status = 'active'") or 0
-            entities = await db.fetch_val("SELECT COUNT(*) FROM entities WHERE status = 'active'") or 0
-            edges = await db.fetch_val("SELECT COUNT(*) FROM edges WHERE status = 'active'") or 0
-            obs = await db.fetch_val("SELECT COUNT(*) FROM observed_edges WHERE status = 'active'") or 0
+            from nexus.repositories.graph import PostgresGraphRepository
+
+            graph_repo = PostgresGraphRepository(await db.get_pool())
+            entities = await graph_repo.count_active("entities")
+            edges = await graph_repo.count_active("edges")
+            obs = await graph_repo.count_active("observed_edges")
             quarantined = await db.fetch_val("SELECT COUNT(*) FROM documents WHERE is_quarantined = true") or 0
 
             typer.echo(f"\n문서: {docs}  청크: {chunks}  엔티티: {entities}")

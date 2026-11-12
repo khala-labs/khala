@@ -1168,16 +1168,13 @@ async def get_graph(
         rid = entity_rid_param
         if not entity_rid_param.startswith("ent_"):
             # 이름으로 entity 검색
-            row = await db.fetch_one(
-                "SELECT rid FROM entities WHERE name = $1 AND tenant = $2 AND status = 'active'",
-                entity_rid_param, tenant,
-            )
-            if not row:
+            found = await graph_repo.find_entity_rid(entity_rid_param, tenant)
+            if not found:
                 # canonicalize 후 재시도
                 canonical = canonicalize_entity_name(entity_rid_param, "Service")
                 rid = entity_rid(tenant, "Service", canonical)
             else:
-                rid = row["rid"]
+                rid = found
 
         subgraph = await graph_repo.get_neighbors(
             rid, hops=hops, tenant=tenant, clearance=classification_max)
@@ -1186,10 +1183,7 @@ async def get_graph(
             raise HTTPException(status_code=404, detail="엔티티를 찾을 수 없습니다.")
 
         # 엔티티 상세 정보 조회
-        entity_row = await db.fetch_one(
-            "SELECT rid, name, entity_type, aliases, description FROM entities WHERE rid = $1",
-            rid,
-        )
+        entity_row = await graph_repo.get_entity(rid)
         center_entity = {
             "rid": subgraph.center_rid,
             "name": subgraph.center_name,
@@ -1209,19 +1203,7 @@ async def get_graph(
                 # base_filter 를 증거 청크에도 강제(SPEC-nexus-graph-scope-filter §4.3):
                 # 스코프 밖 청크의 chunk_text 가 그래프 증거로 새지 않게 한다. INNER JOIN + 필터라
                 # 스코프 밖(또는 backing chunk 없는) 증거는 배제된다.
-                evi_rows = await db.fetch_all(
-                    """
-                    SELECT ev.note, c.chunk_text, c.section_path, d.title as doc_title
-                    FROM evidence ev
-                    JOIN chunks c ON ev.evidence_rid = c.rid
-                    JOIN documents d ON c.doc_rid = d.rid
-                    WHERE ev.subject_rid = $1 AND ev.status = 'active'
-                      AND c.tenant = $2 AND c.classification <= $3::classification_level
-                      AND c.is_quarantined = false AND c.status = 'active'
-                      AND d.status = 'active'
-                    """,
-                    e.rid, tenant, classification_max,
-                )
+                evi_rows = await graph_repo.edge_evidence(e.rid, tenant, classification_max)
                 for er in evi_rows:
                     snippet_text = er["chunk_text"][:200] if er["chunk_text"] else ""
                     evidence_snippets.append({
@@ -1272,6 +1254,7 @@ async def get_diff(
     tenant, clearance = effective_scope(principal, tenant, None)
     try:
         report = await run_diff(tenant=tenant, flag_filter=flag_filter, clearance=clearance)
+        graph_repo = PostgresGraphRepository(await db.get_pool())
 
         diffs_with_evidence = []
         for d in report.diffs:
@@ -1290,23 +1273,11 @@ async def get_diff(
                 "observed_evidence": [],
             }
 
-            # 설계 edge의 evidence (chunk snippet) — `/graph` 의 증거 조회와 **같은 base_filter**
-            # (SPEC-nexus-graph-scope-filter §4.3). 여기만 LEFT JOIN 에 필터가 없어서 호출자
-            # 등급 위의 청크 본문이 diff 증거로 나갈 수 있었다(2026-11-12 구조 점검).
+            # 설계 edge의 evidence (chunk snippet) — `/graph` 와 **같은 함수**다
+            # (`GraphRepository.edge_evidence`, base_filter 포함). 두 벌이던 때 여기만 필터가
+            # 없어서 호출자 등급 위의 청크 본문이 diff 증거로 나갈 수 있었다(2026-11-12 구조 점검).
             if d.edge_rid:
-                evi_rows = await db.fetch_all(
-                    """
-                    SELECT c.chunk_text, c.section_path, d.title as doc_title
-                    FROM evidence ev
-                    JOIN chunks c ON ev.evidence_rid = c.rid
-                    JOIN documents d ON c.doc_rid = d.rid
-                    WHERE ev.subject_rid = $1 AND ev.status = 'active'
-                      AND c.tenant = $2 AND c.classification <= $3::classification_level
-                      AND c.is_quarantined = false AND c.status = 'active'
-                      AND d.status = 'active'
-                    """,
-                    d.edge_rid, tenant, clearance,
-                )
+                evi_rows = await graph_repo.edge_evidence(d.edge_rid, tenant, clearance)
                 for er in evi_rows:
                     item["designed_evidence"].append({
                         "doc_title": er["doc_title"] or "",
@@ -1316,11 +1287,7 @@ async def get_diff(
 
             # 관측 edge의 evidence (trace ref)
             if d.observed_edge_rid:
-                obs_row = await db.fetch_one(
-                    "SELECT sample_trace_ids, trace_query_ref FROM observed_edges "
-                    "WHERE rid = $1 AND tenant = $2",
-                    d.observed_edge_rid, tenant,
-                )
+                obs_row = await graph_repo.observed_trace_ref(d.observed_edge_rid, tenant)
                 if obs_row:
                     item["observed_evidence"] = {
                         "sample_trace_ids": list(obs_row["sample_trace_ids"] or []),
@@ -1643,21 +1610,8 @@ async def suggest_entities(
     """엔티티 자동완성. UI 검색창에서 사용."""
     tenant, _ = effective_scope(principal, tenant, None)
     try:
-        rows = await db.fetch_all(
-            """
-            SELECT rid, name, entity_type, aliases, description
-            FROM entities
-            WHERE status = 'active' AND tenant = $1
-              AND (
-                name ILIKE $2
-                OR $3 = ANY(aliases)
-                OR name % $4
-              )
-            ORDER BY similarity(name, $4) DESC
-            LIMIT $5
-            """,
-            tenant, f"%{q}%", q, q, limit,
-        )
+        rows = await PostgresGraphRepository(await db.get_pool()).suggest_entities(
+            q, tenant, limit)
         return NexusResponse(
             data=[
                 {
@@ -1941,15 +1895,10 @@ async def status() -> NexusResponse:
             data["chunks_count"] = await db.fetch_val(
                 "SELECT COUNT(*) FROM chunks WHERE status = 'active'"
             ) or 0
-            data["entities_count"] = await db.fetch_val(
-                "SELECT COUNT(*) FROM entities WHERE status = 'active'"
-            ) or 0
-            data["edges_count"] = await db.fetch_val(
-                "SELECT COUNT(*) FROM edges WHERE status = 'active'"
-            ) or 0
-            data["observed_edges_count"] = await db.fetch_val(
-                "SELECT COUNT(*) FROM observed_edges WHERE status = 'active'"
-            ) or 0
+            graph_repo = PostgresGraphRepository(await db.get_pool())
+            data["entities_count"] = await graph_repo.count_active("entities")
+            data["edges_count"] = await graph_repo.count_active("edges")
+            data["observed_edges_count"] = await graph_repo.count_active("observed_edges")
             data["quarantined_count"] = await db.fetch_val(
                 "SELECT COUNT(*) FROM documents WHERE is_quarantined = true"
             ) or 0
@@ -1967,14 +1916,12 @@ async def status() -> NexusResponse:
             )
             if data["last_ingest_at"]:
                 data["last_ingest_at"] = data["last_ingest_at"].isoformat()
-            data["last_otel_aggregate_at"] = await db.fetch_val(
-                "SELECT MAX(updated_at) FROM observed_edges WHERE status = 'active'"
-            )
+            data["last_otel_aggregate_at"] = await graph_repo.last_observed_at()
             if data["last_otel_aggregate_at"]:
                 data["last_otel_aggregate_at"] = data["last_otel_aggregate_at"].isoformat()
 
             # diff_summary
-            diff_rows = await db.fetch_all("SELECT diff_type, COUNT(*) as cnt FROM v_edge_diff GROUP BY diff_type")
+            diff_rows = await graph_repo.diff_type_counts()
             diff_summary = {"doc_only_count": 0, "observed_only_count": 0, "conflict_count": 0}
             for row in diff_rows:
                 key = f"{row['diff_type']}_count"

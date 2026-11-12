@@ -280,22 +280,10 @@ async def run_otel_aggregation(
         for e in edges_to_upsert:
             evi_rid = evidence_rid(e["rid"], e.get("trace_query_ref", ""))
             try:
-                await db.execute(
-                    """
-                    INSERT INTO evidence (
-                        rid, rtype, tenant, classification, owner,
-                        source_kind, status, created_at, updated_at,
-                        subject_rid, evidence_rid, kind, weight, note
-                    ) VALUES (
-                        $1, 'evidence', $2, 'INTERNAL', 'otel-aggregator',
-                        'otel', 'active', now(), now(),
-                        $3, $4, 'trace_ref', 0.25, $5
-                    )
-                    ON CONFLICT (rid) DO UPDATE SET updated_at = now()
-                    """,
-                    evi_rid, tenant,
-                    e["rid"], e.get("trace_query_ref", ""),
-                    f"calls={e.get('call_count', 0)}, error_rate={e.get('error_rate', 0):.2%}",
+                await graph_repo.upsert_trace_evidence(
+                    rid=evi_rid, tenant=tenant, subject_rid=e["rid"],
+                    trace_query_ref=e.get("trace_query_ref", ""),
+                    note=f"calls={e.get('call_count', 0)}, error_rate={e.get('error_rate', 0):.2%}",
                 )
             except Exception as ev_err:
                 logger.warning("otel_evidence_failed", rid=e["rid"], error=str(ev_err))
