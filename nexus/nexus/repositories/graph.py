@@ -104,9 +104,47 @@ class GraphRepository(Protocol):
         """두 entity 간 최단 경로 탐색. base_filter 강제."""
         ...
 
-    async def get_diff(self, tenant: str) -> list[DiffItem]:
+    async def get_diff(self, tenant: str, clearance: str | None = None) -> list[DiffItem]:
         """설계 edge vs 관측 edge 비교. v_edge_diff 뷰 활용."""
         ...
+
+
+#: `v_edge_diff` 와 같은 판정(doc_only · observed_only)에 base_filter 를 더한 것.
+#: `$2` 가 NULL 이면 등급은 거르지 않는다(테넌트 내부 유지보수).
+_DIFF_SQL = """
+WITH scoped_entities AS (
+    SELECT rid, name FROM entities
+    WHERE tenant = $1 AND is_quarantined = false AND status = 'active'
+      AND ($2::classification_level IS NULL OR classification <= $2::classification_level)
+),
+designed AS (
+    SELECT e.rid AS edge_rid, e.edge_type, e.from_rid, e.to_rid,
+           ef.name AS from_name, et.name AS to_name, e.confidence
+    FROM edges e
+    JOIN scoped_entities ef ON e.from_rid = ef.rid
+    JOIN scoped_entities et ON e.to_rid = et.rid
+    WHERE e.tenant = $1 AND e.status = 'active' AND e.is_quarantined = false
+      AND ($2::classification_level IS NULL OR e.classification <= $2::classification_level)
+),
+observed AS (
+    SELECT o.rid AS obs_rid, o.edge_type, o.from_rid, o.to_rid,
+           of2.name AS from_name, ot.name AS to_name, o.call_count, o.latency_p95
+    FROM observed_edges o
+    JOIN scoped_entities of2 ON o.from_rid = of2.rid
+    JOIN scoped_entities ot ON o.to_rid = ot.rid
+    WHERE o.tenant = $1 AND o.status = 'active' AND o.is_quarantined = false
+      AND ($2::classification_level IS NULL OR o.classification <= $2::classification_level)
+)
+SELECT 'doc_only' AS diff_type, d.edge_rid, NULL AS obs_rid, d.from_name, d.to_name,
+       d.edge_type, d.confidence, NULL::int AS call_count, NULL::float AS latency_p95
+FROM designed d LEFT JOIN observed o ON d.from_rid = o.from_rid AND d.to_rid = o.to_rid
+WHERE o.obs_rid IS NULL
+UNION ALL
+SELECT 'observed_only', NULL, o.obs_rid, o.from_name, o.to_name,
+       o.edge_type, NULL::float, o.call_count, o.latency_p95
+FROM observed o LEFT JOIN designed d ON o.from_rid = d.from_rid AND o.to_rid = d.to_rid
+WHERE d.edge_rid IS NULL
+"""
 
 
 class PostgresGraphRepository:
@@ -339,11 +377,19 @@ class PostgresGraphRepository:
             for r in rows
         ]
 
-    async def get_diff(self, tenant: str) -> list[DiffItem]:
-        """v_edge_diff 뷰로 설계-관측 불일치 조회."""
-        rows = await self._fetch(
-            "SELECT * FROM v_edge_diff",
-        )
+    async def get_diff(self, tenant: str, clearance: str | None = None) -> list[DiffItem]:
+        """설계-관측 불일치 조회 — **호출자의 테넌트(·등급) 안에서만.**
+
+        ⛔ **왜 뷰를 안 쓰나 (2026-11-12 구조 점검).** 이 메서드는 `tenant` 를 받고도
+        `SELECT * FROM v_edge_diff` 를 돌렸다. 그 뷰(`init.sql`)에는 tenant 열이 없어서 `/diff` 와
+        `/search` 의 diff 플래그가 **모든 테넌트**의 엣지를 돌려줬다. 뷰와 같은 판정을 여기서
+        하되, 엣지와 양 끝 엔티티에 base_filter 를 건다 — `f_graph_neighbors` 와 같은 규칙이다
+        (SPEC-nexus-graph-scope-filter).
+
+        ``clearance`` 가 ``None`` 이면 등급은 거르지 않는다 — 태깅 같은 테넌트 내부 유지보수용이다.
+        응답으로 나가는 호출은 반드시 등급을 넘긴다.
+        """
+        rows = await self._fetch(_DIFF_SQL, tenant, clearance)
         return [
             DiffItem(
                 flag=r["diff_type"],
