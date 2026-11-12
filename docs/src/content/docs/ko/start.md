@@ -50,5 +50,4 @@ docker compose exec nexus-app nexus ingest ./docs
 
 - 공통: `git`, 최신 Python / Node.js 런타임.
 - Nexus: Docker 및 Docker Compose.
-- Observer: Node.js ≥ 20.
-- Arbiter / Probe / Adept: Python 3.11+ (Probe 실행 시 `cosmic-ray` 필요).
+- Arbiter: Python 3.11+.

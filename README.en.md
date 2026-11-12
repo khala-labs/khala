@@ -39,7 +39,7 @@ information drift apart in an AI-era org, and each one is a Khala surface:
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="assets/same-information.en.dark.svg" />
-    <img src="assets/same-information.en.svg" alt="Nexus, Arbiter, Observer, and Adept feed a single substrate (khala) that keeps information approved, current, and cited for humans via web console and agents via MCP and A2A." width="840" />
+    <img src="assets/same-information.en.svg" alt="Nexus and Arbiter feed a single substrate (khala) that keeps information approved, current, and cited for humans via web console and agents via MCP and A2A." width="840" />
   </picture>
 </p>
 

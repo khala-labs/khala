@@ -51,4 +51,4 @@ To stop: `task down`. To update after `git pull`: `task update` (rebuilds **and*
 
 ## Prerequisites
 - Common: git, a recent runtime.
-- Nexus: Docker (Postgres etc. run inside the compose stack — no separate install). Observer: Node ≥20. Arbiter / Probe / Adept: Python (Probe needs `cosmic-ray`).
+- Nexus: Docker (Postgres etc. run inside the compose stack — no separate install). Arbiter: Python.

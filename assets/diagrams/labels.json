@@ -1,6 +1,6 @@
 {
  "d1.desc": {
-  "ko": "네 가지 정보를 승인, 최신, 인용 상태로 관리하는 단일 공유 계층",
+  "ko": "두 가지 정보를 승인, 최신, 인용 상태로 관리하는 단일 공유 계층",
   "en": "One governed substrate keeping information approved, current, and cited"
  },
  "d1.note1": {
@@ -18,14 +18,6 @@
  "d1.arbiter.role": {
   "ko": "사양 승인. 코드 전 게이트",
   "en": "Design decisions. Spec gate"
- },
- "d1.observer.role": {
-  "ko": "런타임 상태. 분석 근거",
-  "en": "Runtime state. Review evidence"
- },
- "d1.adept.role": {
-  "ko": "시스템 이해도. 보증 커버리지",
-  "en": "Artifact vouching. Coverage"
  },
  "d1.core.name": {
   "ko": "공유 계층",
