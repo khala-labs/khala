@@ -220,8 +220,8 @@ tasks:
   lint:ruff:
     desc: ruff check across the repo (check-only baseline — same scope as the CI lint job)
     cmds:
-      # Whole repo, matching CI. Naming three directories left adept, adept-web and the
-      # root tests/ unlinted, and the gap was invisible because nothing ran this in CI.
+      # Whole repo, matching CI. Naming directories left the root tests/ unlinted,
+      # and the gap was invisible because nothing ran this in CI.
       - ruff check .
 
   llm-bridge:
