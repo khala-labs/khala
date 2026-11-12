@@ -150,7 +150,7 @@ def totals(rows: list[dict]) -> dict:
 async def run_arm(name: str, pool: int, groups: dict[str, list[dict]], tenant: list[str],
                   holder_rid: str | None, repeats: int) -> dict:
     from nexus import db
-    from nexus.api import _load_config
+    from nexus.config import load_config as _load_config
     from nexus.providers.embedding import embedding_service_from_config
     from nexus.search import hybrid
     from nexus.search.evidence_packet import format_for_llm

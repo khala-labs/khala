@@ -39,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import yaml  # noqa: E402
 
 from nexus import db  # noqa: E402
-from nexus.api import _load_config  # noqa: E402
+from nexus.config import load_config as _load_config  # noqa: E402
 from nexus.index.bm25 import active_tokenizer, tokens_to_tsquery  # noqa: E402
 from nexus.index.vector_index import configured_column  # noqa: E402
 from nexus.providers.embedding import embedding_service_from_config  # noqa: E402

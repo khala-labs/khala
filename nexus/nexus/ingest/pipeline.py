@@ -11,7 +11,6 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 
 import structlog
-import yaml
 
 from nexus import db
 from nexus.documents.origin import source_kind_for
@@ -88,14 +87,10 @@ def machine_written_tenants(config: dict | None = None) -> frozenset[str]:
 
 
 def _load_config(config_path: str = "config.yaml") -> dict:
-    """config.yaml 로드."""
-    from pathlib import Path
-    p = Path(config_path)
-    if not p.exists():
-        logger.warning("config_not_found", path=config_path)
-        return {}
-    with open(p, encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+    """config.yaml 로드 — 파일이 없으면 경고를 남긴다(적재 경로의 오늘 동작)."""
+    from nexus.config import load_config
+
+    return load_config(config_path, warn_missing=True)
 
 
 #: 원본 수정 시각을 싣는 frontmatter 키 — **앞의 것이 이긴다.**

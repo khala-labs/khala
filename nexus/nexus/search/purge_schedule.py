@@ -17,10 +17,8 @@ from __future__ import annotations
 
 import asyncio
 import os
-from pathlib import Path
 
 import structlog
-import yaml
 
 from nexus import db
 
@@ -55,13 +53,10 @@ def interval_hours() -> float:
 
 
 def _load_config() -> dict:
-    """config.yaml 로드. 없으면 빈 dict — 이 모듈이 나머지 코드베이스와 같은 관례를 쓴다
-    (`api.py`·`cli.py`·`ingest/pipeline.py` 가 각자 이 함수를 갖고 있다)."""
-    p = Path("config.yaml")
-    if not p.exists():
-        return {}
-    with open(p, encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
+    """config.yaml 로드 — `nexus.config.load_config` 하나로 모았다."""
+    from nexus.config import load_config
+
+    return load_config()
 
 
 def span_candidate_retain_days() -> int:

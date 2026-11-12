@@ -41,7 +41,7 @@ TENANT, CLEARANCE = "default", "INTERNAL"
 async def _packets(limit: int):
     """질문마다 (질문, 시스템, 사용자, 패킷). **배포와 같은 코드**로 만든다."""
     from nexus import db
-    from nexus.api import _load_config
+    from nexus.config import load_config as _load_config
     from nexus.llm.prompts import build_prompts
     from nexus.providers.embedding import embedding_service_from_config
     from nexus.search import hybrid

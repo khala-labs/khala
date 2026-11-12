@@ -29,7 +29,7 @@ async def main() -> None:
     ap.add_argument("--top-k", type=int, default=20)
     args = ap.parse_args()
 
-    from nexus.api import _load_config
+    from nexus.config import load_config as _load_config
     from nexus.providers.embedding import embedding_service_from_config
     from nexus.search import hybrid
 

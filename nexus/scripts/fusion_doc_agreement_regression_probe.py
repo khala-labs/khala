@@ -69,7 +69,7 @@ def _median(xs: list[float]) -> float:
 async def _run(args) -> int:
     from nexus import db
     from nexus.api import _search_channels
-    from nexus.cli import _load_config
+    from nexus.config import load_config as _load_config
     from nexus.providers.embedding import embedding_service_from_config
     from nexus.search import hybrid
     from nexus.search.evidence_packet import format_for_llm
