@@ -67,13 +67,17 @@ jobs:
       # §Dependencies): the ledger check below imports its hashing, so an unpinned `@master`
       # let a push to another repo turn this job red or quietly weaken the check. Moving the
       # pin is a deliberate PR. Keep the two install lines in this file on the same commit.
-      - run: pip install "pyyaml>=6.0,<7" "pytest>=8.3.0,<10" "khala-arbiter @ git+https://github.com/khala-labs/arbiter@3b5c793f41e248f507f2d6dc5a3b9c59fc60a2dd"
+      - run: pip install "pyyaml>=6.0,<7" "pytest>=8.3.0,<10" "khala-arbiter @ git+https://github.com/khala-labs/arbiter@3e6e6ac350e7d9c9a2935f218a19d6add2146481"
       - name: Every stamped artifact still matches its body
         run: python scripts/ledger_integrity.py
       - name: The check has teeth (negative control + read-only + manifest)
         run: python -m pytest tests/test_ledger_integrity.py -q
       - name: The approve script writes only into records/ and refuses a missing ledger
         run: python -m pytest tests/test_approve_script.py -q
+      - name: records/INDEX.md is what Arbiter generates from the ledger
+        run: python scripts/check_index.py
+      - name: The index check has teeth (stale fails and is left untouched)
+        run: python -m pytest tests/test_check_index.py -q
       # This repo is public. A partner organisation's name, work email, Access tenant hostname and
       # real Notion page ids were scrubbed once on 2026-07-01 and came back within a month, in
       # test fixtures, a config comment, docs and two commit messages. Memory failed at this twice;
@@ -365,7 +369,7 @@ jobs:
         working-directory: nexus
         run: pip install -e ".[dev,a2a]" -c constraints.txt
       - name: Install arbiter (from its own repository)
-        run: pip install "khala-arbiter @ git+https://github.com/khala-labs/arbiter@3b5c793f41e248f507f2d6dc5a3b9c59fc60a2dd"
+        run: pip install "khala-arbiter @ git+https://github.com/khala-labs/arbiter@3e6e6ac350e7d9c9a2935f218a19d6add2146481"
       - name: Run the cross-tool E2E
         env:
           KHALA_REQUIRE_E2E: "1"
