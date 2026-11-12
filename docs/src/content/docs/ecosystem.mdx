@@ -7,11 +7,9 @@ Producer tools across the Khala ecosystem avoid direct coupling, exchanging all 
 
 <img
   src="/diagrams/ecosystem.svg"
-  alt="Khala ecosystem topology: Fragmented sources (docs, specs, traces, configs) flow into one governed link; humans and agents query the same shared view, and Adept audits the link as a ledger of comprehension."
+  alt="Khala ecosystem topology: Fragmented sources (docs, specs, traces, configs) flow into one governed link; humans and agents query the same shared view."
   style="max-width: 100%; height: auto; display: block; margin: 1.5rem auto;"
 />
 
 - **Archon**: Provides a single authority window directly mapped to static codebase constants and domain invariants.
-- **Observer**: Consumes the Khala substrate alongside human reviewers to verify PR architectural integrity and runtime telemetry impacts.
 - **Arbiter**: Publishes verified, approved architectural specifications (SPECs) into the substrate; validity is guaranteed by immutable frontmatter content hashes.
-- **Adept**: Audits the substrate as an evaluation ledger, measuring vouch coverage of human comprehension against the full knowledge corpus denominator.

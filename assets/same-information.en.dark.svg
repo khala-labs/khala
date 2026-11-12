@@ -12,18 +12,12 @@
     <text x="20" y="56" font-size="12" fill="#9a9a9a">One governed substrate keeping information approved, current, and cited</text>
     <text x="820" y="36" font-size="11" fill="#9a9a9a" text-anchor="end">Human and agent read the same substrate</text>
     <text x="820" y="52" font-size="11" fill="#9a9a9a" text-anchor="end">Both see the same governed view</text>
-    <rect x="32" y="96" width="220" height="52" fill="#232a3a" stroke="#2b3f6b" stroke-width="1.5"/>
-    <text x="44" y="119" font-size="12.5" font-weight="700" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace">Nexus</text>
-    <text x="44" y="135" font-size="11" fill="#9a9a9a">Approved knowledge. Citations</text>
     <rect x="32" y="164" width="220" height="52" fill="#232a3a" stroke="#2b3f6b" stroke-width="1.5"/>
-    <text x="44" y="187" font-size="12.5" font-weight="700" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace">Arbiter</text>
-    <text x="44" y="203" font-size="11" fill="#9a9a9a">Design decisions. Spec gate</text>
+    <text x="44" y="187" font-size="12.5" font-weight="700" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace">Nexus</text>
+    <text x="44" y="203" font-size="11" fill="#9a9a9a">Approved knowledge. Citations</text>
     <rect x="32" y="232" width="220" height="52" fill="#232a3a" stroke="#2b3f6b" stroke-width="1.5"/>
-    <text x="44" y="255" font-size="12.5" font-weight="700" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace">Observer</text>
-    <text x="44" y="271" font-size="11" fill="#9a9a9a">Runtime state. Review evidence</text>
-    <rect x="32" y="300" width="220" height="52" fill="#232a3a" stroke="#2b3f6b" stroke-width="1.5"/>
-    <text x="44" y="323" font-size="12.5" font-weight="700" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace">Adept</text>
-    <text x="44" y="339" font-size="11" fill="#9a9a9a">Artifact vouching. Coverage</text>
+    <text x="44" y="255" font-size="12.5" font-weight="700" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace">Arbiter</text>
+    <text x="44" y="271" font-size="11" fill="#9a9a9a">Design decisions. Spec gate</text>
     <rect x="376" y="188" width="160" height="72" fill="#2b3f6b" stroke="#2b3f6b" stroke-width="1.5"/>
     <rect x="380" y="192" width="152" height="64" fill="none" stroke="#ffffff" stroke-width="0.75" stroke-opacity="0.6"/>
     <text x="388" y="211" font-size="12.5" fill="#ffffff" font-weight="700" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace">Substrate</text>
@@ -36,11 +30,9 @@
     <text x="660" y="279" font-size="12" font-family="Menlo, Consolas, 'DejaVu Sans Mono', monospace">Agent</text>
     <text x="660" y="295" font-size="11" fill="#9a9a9a">MCP, A2A</text>
     <g fill="none" stroke="#e6e6e6" stroke-width="1.2">
-      <path d="M252,122 H284"/>
       <path d="M252,190 H284"/>
       <path d="M252,258 H284"/>
-      <path d="M252,326 H284"/>
-      <path d="M284,122 V326"/>
+      <path d="M284,190 V258"/>
       <path d="M284,224 H374" marker-end="url(#data)"/>
       <path d="M536,224 H576 V166 H646" marker-end="url(#data)"/>
       <path d="M576,224 V282 H646" marker-end="url(#data)"/>

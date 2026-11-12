@@ -30,7 +30,7 @@ export const GET: APIRoute = async () => {
   const lines: string[] = [
     '# Khala',
     '',
-    '> Grounded answers about your code, docs, and services, every one backed by a source. An alliance of tools (Nexus, Archon, Observer, Arbiter, Probe) that connect only through Khala, the shared link.',
+    '> Grounded answers about your code, docs, and services, every one backed by a source. An alliance of tools (Nexus, Archon, Arbiter) that connect only through Khala, the shared link.',
     '',
     '## Docs',
     '',

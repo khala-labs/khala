@@ -131,18 +131,18 @@ def same_information(lang):
     o.append(text(20, 56, t(lang, "d1.desc"), 12, fill=P["grey"]))
     o.append(text(820, 36, t(lang, "d1.note1"), 11, fill=P["grey"], anchor="end"))
     o.append(text(820, 52, t(lang, "d1.note2"), 11, fill=P["grey"], anchor="end"))
-    rows = [("Nexus", "d1.nexus.role"), ("Arbiter", "d1.arbiter.role"),
-            ("Observer", "d1.observer.role"), ("Adept", "d1.adept.role")]
+    # 두 상자를 공유 계층(가운데 y=224)에 맞춰 세운다. Observer·Adept 는 ADR-0011 로 은퇴했다.
+    rows = [("Nexus", "d1.nexus.role"), ("Arbiter", "d1.arbiter.role")]
     for i, (name, rk) in enumerate(rows):
-        o += box("project", 32, 96 + 68 * i, 220, 52, name, [t(lang, rk)])
+        o += box("project", 32, 164 + 68 * i, 220, 52, name, [t(lang, rk)])
     o += box("core", 376, 188, 160, 72, t(lang, "d1.core.name"),
              [t(lang, "d1.core.role1"), t(lang, "d1.core.role2")])
     o += box("external", 648, 140, 160, 52, t(lang, "d1.human.name"), [t(lang, "d1.human.role")])
     o += box("external", 648, 256, 160, 52, t(lang, "d1.agent.name"), [t(lang, "d1.agent.role")])
     o.append(group(f'fill="none" stroke="{P["ink"]}" stroke-width="1.2"'))
-    for i in range(4):
-        o.append(f'      <path d="M252,{122 + 68 * i} H284"/>')
-    o += ['      <path d="M284,122 V326"/>',
+    for i in range(len(rows)):
+        o.append(f'      <path d="M252,{190 + 68 * i} H284"/>')
+    o += ['      <path d="M284,190 V258"/>',
           '      <path d="M284,224 H374" marker-end="url(#data)"/>',
           '      <path d="M536,224 H576 V166 H646" marker-end="url(#data)"/>',
           '      <path d="M576,224 V282 H646" marker-end="url(#data)"/>',
