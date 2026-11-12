@@ -394,6 +394,7 @@ A59 에서 내가 우선순위를 트리거로 착각해 대기로 올렸다가 
 - `SPEC-nexus-multi-turn-narration` — §2 의 A15 (멀티턴 미해결 7건 = 이 SPEC 3 + retrieval 4)
 - `SPEC-nexus-multi-turn-retrieval` — §2 의 A15 (멀티턴 미해결 7건 = narration 3 + 이 SPEC 4)
 - `SPEC-nexus-sufficiency-signal` — ADR-0012 (2026-11-10, 소유자 결정으로 되돌림 — 미해결 열둘은 신호와 함께 소멸했고, 남긴 것은 그 ADR 의 열린 항목 절에 있다)
+- `SPEC-nexus-shared-answer-pipeline` — 구현 PR 에서 결정 (§8 다섯 문항: 스트림의 `evidence_only` · CLI 0건 span · `doc_debts` 는 소유자가 구현 PR 에서 정한다. 헬퍼 이동 · 그래프 SQL · 앱 팩토리는 별도 리팩터 PR 로 센다)
 
 ---
 

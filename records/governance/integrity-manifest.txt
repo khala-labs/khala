@@ -52,6 +52,7 @@ SPEC-nexus-retrieval-backstop-detector
 SPEC-nexus-screenshot-text-extraction
 SPEC-nexus-search-recall
 SPEC-nexus-search-signal-completeness
+SPEC-nexus-shared-answer-pipeline
 SPEC-nexus-slack-bot
 SPEC-nexus-snippet-boundary-truncation
 SPEC-nexus-stage-spans
