@@ -24,6 +24,7 @@ sys.path.insert(0, str(ROOT))
 
 from nexus import api  # noqa: E402
 from nexus.llm.answer import AnswerResult  # noqa: E402
+from nexus.labels import SYNTHETIC_LABEL  # noqa: E402
 from nexus.search import evidence_packet  # noqa: E402
 from nexus.search.hybrid import SearchHit, SearchResult  # noqa: E402
 
@@ -39,6 +40,8 @@ def _hit(rid: str, doc: str, title: str, score: float) -> SearchHit:
 def _result() -> SearchResult:
     r = SearchResult(route_used="hybrid_only")
     r.hits = [_hit("c1", "d1", "SOP-01", 0.05), _hit("c2", "d2", "운영 가이드", 0.04)]
+    # 합성 자료 하나 — 두 API 표면이 같은 표시를 다는지 본다.
+    r.hits[0].labels = [SYNTHETIC_LABEL]
     # 정정 확인 패스가 데려온 청크처럼 **점수가 있다** — 그래도 순위 출신이 아니다.
     r.fill = [_hit("c9", "d9", "벤더 노트", 0.03)]
     return r
@@ -124,3 +127,30 @@ def test_the_stream_carries_it_too(client):
     assert len(events) == 1, r.text
     payload = json.loads(events[0].split("data: ", 1)[1])
     assert _ranks(payload["evidence_snippets"]) == {"c1": 1, "c2": 2, "c9": None}
+
+
+def _stream_snippets(client) -> list[dict]:
+    r = client.post("/search/answer/stream", json={"query": "q"}, headers=_AUTH)
+    assert r.status_code == 200, r.text
+    events = [blk for blk in r.text.split("\n\n") if blk.startswith("event: evidence")]
+    return json.loads(events[0].split("data: ", 1)[1])["evidence_snippets"]
+
+
+def test_the_stream_marks_synthetic_evidence_like_the_answer_does(client):
+    """⛔ 웹 채팅이 타는 스트림에만 합성 표시가 빠져 있었다 (2026-11-12 구조 점검).
+
+    합성 자료임을 근거 옆에 못 달면, 지어낸 절차가 실제 운영 문서와 같은 얼굴로 인용된다.
+    """
+    marks = {s["chunk_rid"]: s["synthetic"] for s in _stream_snippets(client)}
+    assert marks == {"c1": True, "c2": False, "c9": False}
+
+
+def test_both_surfaces_send_the_same_snippet_fields(client):
+    """칸 하나가 한쪽에만 생기면 그 칸이 빠진 표면의 사용자만 모른다 — 화면에 안 보인다."""
+    r = client.post("/search/answer", json={"query": "q", "evidence_only": True}, headers=_AUTH)
+    assert r.status_code == 200, r.text
+    answer_keys = {k for s in r.json()["data"]["evidence_snippets"] for k in s}
+    stream_keys = {k for s in _stream_snippets(client) for k in s}
+    assert stream_keys == answer_keys, (
+        f"stream only: {sorted(stream_keys - answer_keys)}; "
+        f"answer only: {sorted(answer_keys - stream_keys)}")
