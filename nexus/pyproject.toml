@@ -24,6 +24,9 @@ dependencies = [
     "httpx>=0.27.0,<1",
     # LLM
     "anthropic>=0.39.0,<1",
+    # Cloudflare Access JWT verification (`auth/access_jwt.py`). It used to arrive only through
+    # the mcp / a2a extras, so a core install broke on the first Access-authenticated request.
+    "cryptography>=42.0.0,<51",
     # Utilities
     "pyyaml>=6.0,<7",
     "pydantic>=2.9.0,<3",
