@@ -74,6 +74,10 @@ jobs:
         run: python -m pytest tests/test_ledger_integrity.py -q
       - name: The approve script writes only into records/ and refuses a missing ledger
         run: python -m pytest tests/test_approve_script.py -q
+      - name: records/INDEX.md is what Arbiter generates from the ledger
+        run: python scripts/check_index.py
+      - name: The index check has teeth (stale fails and is left untouched)
+        run: python -m pytest tests/test_check_index.py -q
       # This repo is public. A partner organisation's name, work email, Access tenant hostname and
       # real Notion page ids were scrubbed once on 2026-07-01 and came back within a month, in
       # test fixtures, a config comment, docs and two commit messages. Memory failed at this twice;

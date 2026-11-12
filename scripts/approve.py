@@ -25,8 +25,10 @@ It then calls the same `review.approve()` the CLI calls, and adds the id to
 
 ⚠ **It does not make the signature stronger.** `approved_by` is still a string, as with the CLI.
 What it adds is that the owner runs one short command (or allows one prompt) instead of a long
-one. It does not regenerate `records/INDEX.md`: `Ledger.index()` calls `Ledger.status()`, which
-rewrites files (see `ledger_integrity.py`).
+one. It then regenerates `records/INDEX.md` through Arbiter, so the index never falls behind the
+ledger again (`scripts/check_index.py` checks that in CI). That is safe since
+SPEC-arbiter-status-is-read-only: `Ledger.status()`, which `index()` calls, no longer
+rewrites files.
 """
 
 from __future__ import annotations
@@ -112,6 +114,7 @@ def approve(artifact_id: str, dispositions: Path | None, approver: str | None,
     review.approve(ledger, artifact_id, disp, who, now=_utc_now)
     art = Artifact.load(ledger._resolve(artifact_id))
     add_to_manifest(root / "records" / "governance" / "integrity-manifest.txt", artifact_id)
+    ledger.index()
     return f"{artifact_id}: {art.meta.get('status')} by {who} ({art.meta.get('content_hash')})"
 
 

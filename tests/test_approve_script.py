@@ -87,3 +87,6 @@ def test_it_approves_through_arbiter_and_lists_the_id(tmp_path):
     assert art_id in line and "someone" in line
     manifest = (records / "governance" / "integrity-manifest.txt").read_text(encoding="utf-8")
     assert art_id in manifest.splitlines()
+    # the index is regenerated too, so it never falls behind the ledger
+    index = (records / "INDEX.md").read_text(encoding="utf-8")
+    assert art_id in index and "## 🟢 승인 (1)" in index
