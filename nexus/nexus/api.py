@@ -1455,6 +1455,11 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
                     "code_anchors": _anchor_summary(getattr(s, "code_anchors", []),
                                                     getattr(s, "code_deleted", []),
                                                     getattr(s, "code_scan", None)),
+                    # CRM 마커 — `llm/answer.py` 의 같은 자리와 같은 이유. 웹 채팅이 타는 이 경로에만
+                    # 빠져 있어서, 합성 자료가 실제 운영 문서와 같은 얼굴로 인용될 수 있었다.
+                    # `tests/test_each_evidence_snippet_says_where_it_ranked.py` 가 두 경로의 칸을 맞춰 본다.
+                    "labels": list(getattr(s, "labels", ()) or ()),
+                    "synthetic": SYNTHETIC_LABEL in (getattr(s, "labels", ()) or ()),
                     "updated_at": s.updated_at,
                 }
                 for s in packet.snippets
