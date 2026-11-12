@@ -499,6 +499,27 @@ def _search_hit_to_dict(h) -> dict:
     }
 
 
+def _server_error(e: Exception, where: str) -> HTTPException:
+    """내부 실패를 **서버 로그에만** 남기고, 클라이언트에는 참조 번호만 준다.
+
+    ⛔ **왜 (2026-11-12 구조 점검).** 끝점 아홉 곳이 `HTTPException(500, detail=str(e))` 로
+    예외 원문을 그대로 돌려줬다 — asyncpg·LLM 오류에는 DSN·테이블 이름·내부 경로가 섞일 수 있다.
+    공개 경로를 열기 전에 막는다. 운영자는 응답의 `ref` 로 로그 줄을 찾는다.
+
+    DB 연결 실패는 오늘처럼 503 이다(두 끝점에만 있던 판정을 여기 하나로 모았다).
+    400·409·413 의 `str(e)` 는 우리 코드가 쓴 검증 문장이라 이 함수의 대상이 아니다.
+    """
+    import secrets
+
+    import structlog
+
+    ref = secrets.token_hex(6)
+    structlog.get_logger(__name__).exception("api.internal_error", where=where, error_ref=ref)
+    if "connect" in str(e).lower():
+        return HTTPException(status_code=503, detail=f"데이터베이스 연결 실패 (ref {ref})")
+    return HTTPException(status_code=500, detail=f"internal error (ref {ref})")
+
+
 def _validate_route(route: str) -> None:
     """DB 를 만지기 전에 route 를 검증한다.
 
@@ -725,9 +746,7 @@ async def search(req: SearchRequest, principal: Principal = Depends(get_principa
         # 맨 ValueError 를 잡으면 내부 버그까지 400 이 되어 조용히 넘어간다.
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        if "connect" in str(e).lower():
-            raise HTTPException(status_code=503, detail="데이터베이스 연결 실패")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _server_error(e, "search") from e
 
 
 # ── 답변 피드백 (SPEC-nexus-answer-feedback) ─────────────────────────────────
@@ -1045,9 +1064,7 @@ async def search_answer(req: SearchAnswerRequest,
         # 맨 ValueError 를 잡으면 내부 버그까지 400 이 되어 조용히 넘어간다.
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        if "connect" in str(e).lower():
-            raise HTTPException(status_code=503, detail="데이터베이스 연결 실패")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _server_error(e, "search_answer") from e
 
 
 @app.post("/ingest", response_model=NexusResponse)
@@ -1076,7 +1093,7 @@ async def ingest(req: IngestRequest, principal: Principal = Depends(get_principa
     except FileNotFoundError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _server_error(e, "ingest") from e
 
 
 @app.post("/upload", response_model=NexusResponse)
@@ -1133,7 +1150,7 @@ async def upload(
             },
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _server_error(e, "upload") from e
 
 
 @app.get("/graph/{entity_rid_param}", response_model=NexusResponse)
@@ -1249,7 +1266,7 @@ async def get_graph(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _server_error(e, "get_graph") from e
 
 
 @app.get("/diff", response_model=NexusResponse)
@@ -1329,7 +1346,7 @@ async def get_diff(
             },
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _server_error(e, "get_diff") from e
 
 
 # /supersede 와 /documents 는 nexus.documents.api 라우터로 이전했다.
@@ -1355,7 +1372,7 @@ async def otel_aggregate(req: OtelAggregateRequest, principal: Principal = Depen
             },
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _server_error(e, "otel_aggregate") from e
 
 
 @app.post("/search/answer/stream")
@@ -1679,7 +1696,9 @@ async def search_answer_stream(req: AnswerRequest, principal: Principal = Depend
             yield f"event: done\ndata: {json.dumps(done_data, ensure_ascii=False)}\n\n"
 
         except Exception as e:
-            yield f"event: error\ndata: {json.dumps({'error': str(e)}, ensure_ascii=False)}\n\n"
+            # 헤더가 이미 나갔으니 HTTP 코드는 못 바꾼다 — 같은 규칙으로 참조 번호만 싣는다.
+            err = _server_error(e, "search_answer_stream")
+            yield f"event: error\ndata: {json.dumps({'error': err.detail}, ensure_ascii=False)}\n\n"
 
     return StreamingResponse(
         event_stream(),
@@ -1730,7 +1749,7 @@ async def suggest_entities(
             ],
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise _server_error(e, "suggest_entities") from e
 
 
 @app.get("/claims/value", response_model=NexusResponse)
