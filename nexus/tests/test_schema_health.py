@@ -39,7 +39,8 @@ async def test_the_verdict_comes_from_the_runner_not_a_second_implementation(mon
                                                                             tmp_path):
     """판정을 여기서 다시 구현하면 두 판정이 갈라지고, 갈라진 진단은 거짓말을 시작한다."""
     seen = {}
-    import scripts.migrate as M
+    # 러너와 진단이 함께 쓰는 판정은 `nexus/migrations.py` 에 있다 — 거기를 엿본다.
+    import nexus.migrations as M
 
     real = M.pending_migrations
 

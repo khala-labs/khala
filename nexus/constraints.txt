@@ -5,6 +5,12 @@
 # the versions we test are the versions we declared, not whatever resolved that morning.
 a2a-sdk==1.1.0
     # via nexus (pyproject.toml)
+aiohappyeyeballs==2.7.1
+    # via aiohttp
+aiohttp==3.14.3
+    # via nexus (pyproject.toml)
+aiosignal==1.4.0
+    # via aiohttp
 annotated-doc==0.0.5
     # via
     #   fastapi
@@ -26,6 +32,7 @@ asyncpg==0.31.0
     # via nexus (pyproject.toml)
 attrs==26.1.0
     # via
+    #   aiohttp
     #   jsonschema
     #   referencing
 certifi==2026.7.22
@@ -48,6 +55,7 @@ coverage==7.15.2
     # via pytest-cov
 cryptography==50.0.0
     # via
+    #   nexus (pyproject.toml)
     #   google-auth
     #   pyjwt
 distro==1.9.0
@@ -56,6 +64,10 @@ docstring-parser==0.18.0
     # via anthropic
 fastapi==0.141.1
     # via nexus (pyproject.toml)
+frozenlist==1.8.0
+    # via
+    #   aiohttp
+    #   aiosignal
 google-api-core==2.33.0
     # via a2a-sdk
 google-auth==2.56.2
@@ -91,6 +103,7 @@ idna==3.18
     #   httpx
     #   httpx2
     #   requests
+    #   yarl
 iniconfig==2.3.0
     # via pytest
 jiter==0.16.0
@@ -111,6 +124,10 @@ mdurl==0.1.2
     # via markdown-it-py
 mecab-python3==1.0.12
     # via nexus (pyproject.toml)
+multidict==6.7.1
+    # via
+    #   aiohttp
+    #   yarl
 notion-client==3.1.0
     # via nexus (pyproject.toml)
 opentelemetry-api==1.44.0
@@ -119,12 +136,14 @@ packaging==26.2
     # via
     #   a2a-sdk
     #   pytest
-pgvector==0.5.0
-    # via nexus (pyproject.toml)
 pluggy==1.6.0
     # via
     #   pytest
     #   pytest-cov
+propcache==0.5.2
+    # via
+    #   aiohttp
+    #   yarl
 proto-plus==1.28.2
     # via google-api-core
 protobuf==6.33.6
@@ -189,12 +208,8 @@ referencing==0.37.0
     # via
     #   jsonschema
     #   jsonschema-specifications
-regex==2026.7.19
-    # via tiktoken
 requests==2.34.2
-    # via
-    #   google-api-core
-    #   tiktoken
+    # via google-api-core
 rich==15.0.0
     # via typer
 rpds-py==2026.6.3
@@ -221,8 +236,6 @@ starlette==1.3.1
     #   mcp
     #   sse-starlette
 structlog==26.1.0
-    # via nexus (pyproject.toml)
-tiktoken==0.13.0
     # via nexus (pyproject.toml)
 tree-sitter==0.26.0
     # via nexus (pyproject.toml)
@@ -266,15 +279,5 @@ watchfiles==1.2.0
     # via uvicorn
 websockets==17.0.1
     # via uvicorn
-
-# ── slack 봇의 async 런타임(`aiohttp`)과 그 전이 의존 ──────────────────────────
-# `task deps:lock` 은 전부 재해석해 무관한 pin 까지 5개 프로젝트에 걸쳐 올린다. 이 변경은
-# aiohttp 하나를 더하는 것이므로 **그 때문에 새로 필요해진 것만** 넣는다. 다음 정기 lock
-# 때 이 블록은 본문으로 흡수된다.
-aiohappyeyeballs==2.7.1
-aiohttp==3.14.3
-aiosignal==1.4.0
-frozenlist==1.8.0
-multidict==6.7.1
-propcache==0.5.2
 yarl==1.24.5
+    # via aiohttp
