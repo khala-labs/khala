@@ -6,17 +6,16 @@
 |---|---|---|---|---|
 | SPEC-specledger-a2a-publish-phase3 | Phase 3 — specledger publish to Nexus as an A2A task |  | 2026-06-18 | ADR-0001 |
 
-## 🟡 검토중 (5)
+## 🟡 검토중 (4)
 
 | id | title | approved_by | date | linked_adrs |
 |---|---|---|---|---|
 | SPEC-nexus-code-semantic-cards | Generate a natural-language card from code and prove the generator repeats itself — matching is a later SPEC |  |  | ADR-0008 |
 | SPEC-nexus-doc-code-anchors | A document that describes code should hold a typed reference into it, so "is this doc stale" is a join and not a judgement |  |  | ADR-0008 |
-| SPEC-nexus-shared-answer-pipeline | One answer pipeline for every surface: retrieval, evidence shaping and read scope are shared, not copied |  | 2026-11-12T15:42:23Z | ADR-0008 |
 | ADR-0011 | The technical-debt leg's two tools are retired, and the cognitive-debt leg stays open without its tool |  | 2026-11-08T15:40:35Z | ADR-0002, ADR-0003, ADR-0004 |
 | ADR-0012 | The sufficiency signal is reversed on its review date: migration 012 undone, no consumer gate declared |  | 2026-11-10T12:46:17Z | ADR-0002, ADR-0006 |
 
-## 🟢 승인 (62)
+## 🟢 승인 (63)
 
 | id | title | approved_by | date | linked_adrs |
 |---|---|---|---|---|
@@ -61,6 +60,7 @@
 | SPEC-nexus-screenshot-text-extraction | Read the policy that lives inside screenshots — khala absorbs the friction, the organisation does not retype its documents | LivingLikeKrillin |  | ADR-0002, ADR-0004, ADR-0006, ADR-0010 |
 | SPEC-nexus-search-recall | BM25 recall — the keyword leg answers nothing, and `route` answers nobody | LivingLikeKrillin | 2026-07-10 | ADR-0004 |
 | SPEC-nexus-search-signal-completeness | Search signals — record the streaming path, and measure citation fabrication | LivingLikeKrillin |  | ADR-0004, ADR-0006 |
+| SPEC-nexus-shared-answer-pipeline | One answer pipeline for every surface: retrieval, evidence shaping and read scope are shared, not copied | LivingLikeKrillin | 2026-11-12T15:42:23Z | ADR-0008 |
 | SPEC-nexus-slack-bot | The Slack bot, revived — the lowest-friction on-ramp for a team that lives in Slack | LivingLikeKrillin | 2026-07-10 | ADR-0004 |
 | SPEC-nexus-snippet-boundary-truncation | Evidence snippets truncate at a sentence boundary, not mid-sentence | LivingLikeKrillin |  | ADR-0004 |
 | SPEC-nexus-stage-spans | Stage spans (Unit 1) — capture what each retrieval stage received and produced | LivingLikeKrillin | 2026-09-04 | ADR-0006 |

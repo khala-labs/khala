@@ -3,7 +3,7 @@ id: SPEC-nexus-shared-answer-pipeline
 type: spec
 title: 'One answer pipeline for every surface: retrieval, evidence shaping and read
   scope are shared, not copied'
-status: in_review
+status: approved
 linked_adrs:
 - ADR-0008
 tags:
@@ -11,6 +11,9 @@ tags:
 - search
 - refactor
 date: '2026-11-12T15:42:23Z'
+approved_by: LivingLikeKrillin
+reviewed_at: '2026-11-12T16:53:45Z'
+content_hash: sha256:0feefa86190a7781074fc9fe416468f3bd6e719890880e7ca191e55f0ea5d42d
 ---
 # One answer pipeline for every surface: retrieval, evidence shaping and read scope are shared, not copied
 

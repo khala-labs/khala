@@ -13,8 +13,13 @@ issues:
     and they are missing from the A2A/CLI import list (nexus.search.hybrid, reconcile,
     router, index.graph_extractor, repositories.graph, config). The design cannot
     work for A2A and the CLI unless those helpers move, which the non-goals forbid.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: 'Fixed. Channels are computed by the caller: HTTP handlers call
+    api._search_channels and pass the result; A2A and the CLI pass None, as neither
+    runs that step today. The pipeline never imports _search_channels. The guess that
+    _load_gazetteer and _build_entity_patterns live in api.py was wrong: they are
+    in nexus/index/graph_extractor.py and api.py imports them, which is why tests
+    patch them there.'
 - issue_id: I-002
   category: risky-assumption
   severity: high
@@ -26,8 +31,10 @@ issues:
     the pipeline changes their retrieval behaviour. §5 Compatibility does not cover
     that change, and it undercuts the 'only moves existing retrieval steps' basis
     of the ADR-0008 backstop ruling.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: 'Fixed. §3 now lists the steps each surface runs today (A2A
+    and the CLI: entity detection, route, search, no channel step), and the pipeline
+    runs only those steps per caller. No surface gains a step.'
 - issue_id: I-003
   category: adr-contradiction
   severity: medium
@@ -39,8 +46,10 @@ issues:
     limit the pipeline to steps each surface already performs. Separately, ADR-0008
     is still 'In review' (binding on acceptance), so the backstop row cites an ADR
     that is not yet binding.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: 'Fixed by the I-001/I-002 change; the backstop reread now says
+    no surface gains a retrieval step. The second point is wrong: ADR-0008 is accepted,
+    not in review.'
 - issue_id: I-004
   category: unverifiable-claim
   severity: high
@@ -50,8 +59,11 @@ issues:
     through want_packet. Any caller can pass a substitute or set want_packet=False.
     Enforcement still comes from the co_names bytecode walker that §3 calls insufficient,
     so the structural guarantee is claimed but not delivered.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. The 'by structural design' claim is removed. packet_for_answer
+    stays injected because two test files patch it on nexus.api; the SPEC says the
+    seam is held by one call site plus the test, and the A2A and CLI deps always bind
+    reconcile.packet_for_answer.
 - issue_id: I-005
   category: untestable-requirement
   severity: medium
@@ -61,8 +73,12 @@ issues:
     (''a test variant that removes packet_for_answer from retrieve_for_answer'') has
     no defined mechanism: it does not say whether this is source rewriting, a fixture
     or mutmut, or how it runs in CI. Its pass condition cannot be reproduced as written.'
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: 'Fixed. The seam test asserts surfaces call retrieve_for_answer
+    and not hybrid_search/packet_for_answer themselves, and checks what the A2A/CLI
+    deps bind. The mutation check is defined: parse answer_pipeline.py with ast, drop
+    the call node, run the same walker, expect failure; an ordinary pytest case in
+    the unit job.'
 - issue_id: I-006
   category: undefined
   severity: high
@@ -72,8 +88,10 @@ issues:
     / clearance helpers, ...) would silently bypass their patches if the helper imports
     these directly. That would break the 'all 118 pass unmodified' acceptance criterion,
     which is the same failure mode §3 describes for hybrid_search.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. _resolve_read_scope is a private helper in api.py and
+    reads effective_read_scope from the nexus.api namespace at call time, so the existing
+    patch in test_answer_says_what_it_searched.py keeps working.
 - issue_id: I-007
   category: missing-invariant
   severity: medium
@@ -82,8 +100,10 @@ issues:
     has its own read-scope code with no out-of-scope warning log. This contradicts
     the goal of a single read-scope/clearance/out-of-scope helper. Acceptance item
     1 also does not list A2A among the surfaces that must use resolve_read_scope.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed in part. A2A has no HTTP request, so it calls effective_read_scope
+    directly, but it now emits the same out-of-scope warning event; acceptance lists
+    A2A.
 - issue_id: I-008
   category: risky-assumption
   severity: medium
@@ -93,8 +113,10 @@ issues:
     It does not check that existing A2A tokens' read_tenants values were set with
     cross-tenant reads in mind, and it has no negative test that a token without those
     tenants is still refused.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. §5 states the widening (A2A then matches what HTTP already
+    allows). No Nexus deployment is running, so no issued token changes in the field.
+    A negative test pins that a tenant outside read_tenants is refused.
 - issue_id: I-009
   category: missing-invariant
   severity: medium
@@ -103,8 +125,11 @@ issues:
     Which 5 arguments differ, and whether that difference is intended, is never stated.
     No invariant or test pins the per-surface argument set, so future drift stays
     invisible.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. The five HTTP-only arguments are named (window, channels,
+    exclude_doc_types, identifier_channel_asked, fusion_doc_agreement); they come
+    from HTTP request fields A2A and the CLI do not have. An argument-set test pins
+    each surface's set.
 - issue_id: I-010
   category: undefined
   severity: medium
@@ -114,8 +139,10 @@ issues:
     does not say how A2A's route 'auto' and top_k=10 reach the pipeline ('passes explicit
     parameters' where?). Retrieval.timings has no defined stages or units, and nothing
     says whether record_search consumes it.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. The signature is defined (route, top_k, channels, search_opts,
+    want_packet), Retrieval.packet is None when not built, and timings is hybrid_search's
+    timing_ms passed through unchanged.
 - issue_id: I-011
   category: missing-invariant
   severity: medium
@@ -124,8 +151,9 @@ issues:
     ('uses the shared channel selection logic' without saying how). /search can therefore
     still drift from the answer surfaces. Acceptance item 1 does not cover /search's
     retrieval path at all.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. POST /search runs the same front half today, so it calls
+    retrieve_for_answer with want_packet=False and is in acceptance.
 - issue_id: I-012
   category: undefined
   severity: medium
@@ -136,16 +164,20 @@ issues:
     undefined. The SPEC also does not say how abstained/abstain_reason are computed
     on the streaming path, or whether that reuses generate_answer logic or duplicates
     it.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. The stream takes evidence_only in its request but ignores
+    it, so the done event does not gain evidence_only; whether the stream should honour
+    it is an open question. abstained/abstain_reason come from one shared helper (not
+    packet.snippets → 'no_evidence').
 - issue_id: I-013
   category: untestable-requirement
   severity: low
   description: The parity test subtracts 'a documented allowlist' from the keys compared,
     but the SPEC does not give the allowlist's contents or say where it is documented
     and reviewed. An unbounded allowlist can turn the superset check into a no-op.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. The allowlist is exactly {evidence_only}, written in
+    the test with its reason.
 - issue_id: I-014
   category: risky-assumption
   severity: low
@@ -154,8 +186,10 @@ issues:
     code. If either file contains monkeypatch.setattr(api, ...) calls (the backend-per-principal
     test plausibly patches api.LLMService), the two requirements conflict. The SPEC
     should say whether these files are among the 13 counted.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: 'Fixed. Neither seam test file patches nexus.api (verified:
+    0 calls); the clamp test''s 13 patch lines stay as they are and only new cases
+    are added.'
 - issue_id: I-015
   category: untestable-requirement
   severity: low
@@ -163,8 +197,10 @@ issues:
     across 13 files, a count taken on 2026-11-13. The count changes as tests are added
     or removed, and no mechanism (for example a grep-based count in CI) ties the criterion
     to the suite as it stands at merge.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. Acceptance is 'every existing test that patches nexus.api
+    passes with its patch lines unchanged'; 118 stays only as a dated snapshot in
+    §3.
 - issue_id: I-016
   category: scope-creep
   severity: low
@@ -173,8 +209,10 @@ issues:
     a security behaviour change (the A2A read clamp) and API payload additions (the
     union fields, four new done-event keys) into a refactor that the backstop ruling
     describes as only moving existing steps.
-  status: open
-  disposition_reason: null
+  status: accepted
+  disposition_reason: Fixed. §4.4 is 'Callers' (four answer surfaces plus /search
+    and /search/explain), and the backstop reread names the clamp fix and the added
+    keys and says neither touches the retrieval stack.
 - issue_id: I-017
   category: missing-invariant
   severity: low
@@ -183,9 +221,12 @@ issues:
     an A2A principal (llm_provider). Execution telemetry is part of the 14-step sequence,
     but only the HTTP paths are specified, so record_search drift between surfaces
     is left unaddressed.
-  status: open
-  disposition_reason: null
-approved_by: null
-approved_at: null
+  status: deferred
+  disposition_reason: Telemetry consolidation is out of scope. Each surface keeps
+    its record_search call where it is today (A2A and the CLI both call it), and A2A's
+    backend choice stays as SPEC-nexus-per-principal-answer-backend set it. The SPEC
+    now says so.
+approved_by: LivingLikeKrillin
+approved_at: '2026-11-12T16:53:45Z'
 ---
 
