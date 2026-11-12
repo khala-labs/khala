@@ -79,9 +79,33 @@ async def _run_sync(*, run_id: str, tenant: str, roots: list[str], reconcile: bo
         await pool.release(lock_conn)
 
 
+async def vision_refusal(tenant: str) -> str:
+    """이 동기화가 이미 읽어 둔 그림 텍스트를 지우게 되는가 — 지우면 거부 사유, 아니면 빈 문자열.
+
+    ⛔ **CLI `ingest-notion` 에만 있던 가드다** (2026-11-12 구조 점검). 같은 Notion 적재
+    경로(`import_notion` → `_fill_images`)를 웹 콘솔·MCP 의 이 동기화도 타는데, 여기에는 가드가
+    없었다. `NEXUS_VISION` 이 꺼진 채 돌면 `machine_read` 청크가 조용히 사라진다 — 2026-09-02 에
+    466 → 385 로 실제로 지워졌고 라이브 답변이 기권으로 바뀌었다(`ingest/vision_guard.py`).
+
+    CLI 와 달리 **미리보기(`dry_run`)도 검사한다**: 여기서 `dry_run` 은 재조정 planner 만 멈추고
+    `import_notion` 은 그대로 적재한다.
+    """
+    import os
+
+    from nexus.ingest import vision_guard
+
+    n_machine_read = await vision_guard.count_machine_read(tenant)
+    return vision_guard.refusal(n_machine_read, dict(os.environ))
+
+
 async def _walk_and_apply(*, run_id: str, tenant: str, roots: list[str], reconcile: bool,
                           dry_run: bool, force: bool, since: str, threshold: float,
                           confirm_run: str | None, source_factory: SourceFactory) -> None:
+    # 가드가 **먼저**다 — 적재 모듈을 불러오기 전에 거부하고 run 에 사유를 남긴다.
+    if why := await vision_refusal(tenant):
+        await runs_store.finish_run(run_id, status="failed", reason=f"vision_guard: {why}"[:500])
+        return
+
     from nexus.a2a.server import _default_external_ingest_fn
     from nexus.ingest.sources.notion_importer import import_notion
 
