@@ -67,7 +67,7 @@ async def run_diff(
         report.diffs = visible
 
     # quality_flags 태깅
-    await _tag_quality_flags(graph_repo, all_diffs, tenant)
+    await _tag_quality_flags(all_diffs, tenant, graph_repo)
 
     logger.info("diff_complete",
                 designed=report.total_designed,
@@ -77,9 +77,14 @@ async def run_diff(
     return report
 
 
-async def _tag_quality_flags(graph_repo: PostgresGraphRepository,
-                             diffs: list[DiffItem], tenant: str) -> None:
-    """Diff 결과에 따라 edge/observed_edge의 quality_flags 갱신."""
+async def _tag_quality_flags(diffs: list[DiffItem], tenant: str,
+                             graph_repo: PostgresGraphRepository | None = None) -> None:
+    """Diff 결과에 따라 edge/observed_edge의 quality_flags 갱신.
+
+    ``graph_repo`` 를 안 주면 공용 풀로 하나 만든다 — 호출 계약 `(diffs, tenant)` 는 그대로다.
+    """
+    if graph_repo is None:
+        graph_repo = PostgresGraphRepository(await db.get_pool())
     for diff in diffs:
         now = datetime.now(timezone.utc)
 
