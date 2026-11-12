@@ -16,25 +16,22 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import structlog
 
 from nexus import db
+from nexus.migrations import MIGRATIONS_DIR
 
 logger = structlog.get_logger(__name__)
-
-MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "migrations"
 
 
 async def pending() -> list[str]:
     """아직 적용되지 않은 마이그레이션 파일명. 알 수 없으면 빈 목록.
 
-    판정 규칙은 **마이그레이션 러너의 것을 그대로 쓴다**(`scripts.migrate.pending_migrations`).
+    판정 규칙은 **마이그레이션 러너와 같은 함수**다(`nexus.migrations.pending_migrations`).
     여기서 다시 구현하면 두 판정이 갈라지고, 갈라진 순간 이 진단은 거짓말을 시작한다.
     """
     try:
-        from scripts.migrate import pending_migrations
+        from nexus.migrations import pending_migrations
 
         files = list(MIGRATIONS_DIR.glob("*.sql"))
         rows = await db.fetch_all("SELECT version FROM schema_migrations")

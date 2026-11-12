@@ -18,21 +18,8 @@ import sys
 from pathlib import Path
 
 from nexus import db
-
-MIGRATIONS_DIR = Path(__file__).resolve().parent.parent / "migrations"
-
-
-def migration_version(path: Path) -> str:
-    """파일명을 버전 키로 사용(예: 001_add_x.sql)."""
-    return path.name
-
-
-def pending_migrations(all_files: list[Path], applied: set[str]) -> list[Path]:
-    """아직 적용되지 않은 마이그레이션을 파일명 정렬 순으로 반환."""
-    return [
-        f for f in sorted(all_files, key=lambda p: p.name)
-        if migration_version(f) not in applied
-    ]
+# 판정 규칙은 패키지에 있다 — `/status` 의 진단이 같은 함수를 쓴다(`nexus/migrations.py`).
+from nexus.migrations import MIGRATIONS_DIR, migration_version, pending_migrations  # noqa: F401
 
 
 async def _ensure_table_and_applied(conn) -> set[str]:
