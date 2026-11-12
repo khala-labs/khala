@@ -6,16 +6,14 @@
 |---|---|---|---|---|
 | SPEC-specledger-a2a-publish-phase3 | Phase 3 — specledger publish to Nexus as an A2A task |  | 2026-06-18 | ADR-0001 |
 
-## 🟡 검토중 (4)
+## 🟡 검토중 (2)
 
 | id | title | approved_by | date | linked_adrs |
 |---|---|---|---|---|
 | SPEC-nexus-code-semantic-cards | Generate a natural-language card from code and prove the generator repeats itself — matching is a later SPEC |  |  | ADR-0008 |
 | SPEC-nexus-doc-code-anchors | A document that describes code should hold a typed reference into it, so "is this doc stale" is a join and not a judgement |  |  | ADR-0008 |
-| ADR-0011 | The technical-debt leg's two tools are retired, and the cognitive-debt leg stays open without its tool |  | 2026-11-08T15:40:35Z | ADR-0002, ADR-0003, ADR-0004 |
-| ADR-0012 | The sufficiency signal is reversed on its review date: migration 012 undone, no consumer gate declared |  | 2026-11-10T12:46:17Z | ADR-0002, ADR-0006 |
 
-## 🟢 승인 (63)
+## 🟢 승인 (65)
 
 | id | title | approved_by | date | linked_adrs |
 |---|---|---|---|---|
@@ -82,3 +80,5 @@
 | ADR-0008 | Keep Nexus's own substrate; defer the Onyx adoption question with named resume conditions | LivingLikeKrillin | 2026-08-01T09:24:00Z | ADR-0002, ADR-0004, ADR-0006, ADR-0007 |
 | ADR-0009 | The embedding-model block of ADR-0008 is lifted - what the director declared, and what stays open | LivingLikeKrillin | 2026-08-05T04:26:52Z | ADR-0008, ADR-0007 |
 | ADR-0010 | Machine-read text from images is evidence, of a lower tier — and the tier must travel with it | LivingLikeKrillin | 2026-08-09 | ADR-0002, ADR-0004, ADR-0006 |
+| ADR-0011 | The technical-debt leg's two tools are retired, and the cognitive-debt leg stays open without its tool | LivingLikeKrillin | 2026-11-08T15:40:35Z | ADR-0002, ADR-0003, ADR-0004 |
+| ADR-0012 | The sufficiency signal is reversed on its review date: migration 012 undone, no consumer gate declared | LivingLikeKrillin | 2026-11-10T12:46:17Z | ADR-0002, ADR-0006 |

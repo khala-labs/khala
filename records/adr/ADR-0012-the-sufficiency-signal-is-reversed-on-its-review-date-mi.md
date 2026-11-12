@@ -3,12 +3,15 @@ id: ADR-0012
 type: adr
 title: 'The sufficiency signal is reversed on its review date: migration 012 undone,
   no consumer gate declared'
-status: in_review
+status: accepted
 resolves: SPEC-nexus-sufficiency-signal
 linked_adrs:
 - ADR-0002
 - ADR-0006
 date: '2026-11-10T12:46:17Z'
+approved_by: LivingLikeKrillin
+reviewed_at: '2026-11-12T19:55:22Z'
+content_hash: sha256:8cc3ebb3b5c9bcfb88a76e1b1cc274ef9fafd65477e887e7a71732cd0fdb05ed
 ---
 # The sufficiency signal is reversed on its review date: migration 012 undone, no consumer gate declared
 

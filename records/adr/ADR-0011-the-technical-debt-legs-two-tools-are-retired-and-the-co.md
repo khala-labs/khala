@@ -3,12 +3,15 @@ id: ADR-0011
 type: adr
 title: The technical-debt leg's two tools are retired, and the cognitive-debt leg
   stays open without its tool
-status: in_review
+status: accepted
 linked_adrs:
 - ADR-0002
 - ADR-0003
 - ADR-0004
 date: '2026-11-08T15:40:35Z'
+approved_by: LivingLikeKrillin
+reviewed_at: '2026-11-12T19:55:20Z'
+content_hash: sha256:481f88432723e14bd4a673f1491e7347fbd07ee4dbd5240076512540e09c03d5
 ---
 # ADR-0011: The technical-debt leg's two tools are retired, and the cognitive-debt leg stays open without its tool
 
