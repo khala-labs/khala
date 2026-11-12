@@ -17,15 +17,3 @@ class SyncInProgress(SourceError):
     def __init__(self, run_id: str):
         super().__init__(f"sync already running: {run_id}")
         self.run_id = run_id
-
-
-class PlanStale(SourceError):
-    """미리보기 이후 계획이 바뀌었다 (409). 아무것도 적용하지 않는다."""
-
-
-class ConflictingParams(SourceError):
-    """confirm_plan 은 다른 파라미터와 함께 올 수 없다 (400)."""
-
-
-class NotionNotConfigured(SourceError):
-    """NOTION_TOKEN 이 서버에 없다 (503)."""

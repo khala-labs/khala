@@ -19,7 +19,8 @@
 
 from __future__ import annotations
 
-from nexus.llm.citations import QUOTED_PREFIX, as_quoted_content, validate_citations
+from nexus.llm.citations import validate_citations
+from nexus.search.citation_syntax import QUOTED_PREFIX, as_quoted_content
 from nexus.search.evidence_packet import EvidencePacket, EvidenceSnippet, format_for_llm
 
 
