@@ -7,6 +7,9 @@ GraphRepository Protocol은 search.py, diff_engine.py, api.py, otel_aggregator.p
     graph: GraphRepository = PostgresGraphRepository(db)
     neighbors = await graph.get_neighbors(entity_rid, hops=2, tenant=t, clearance=c)
 
+⛔ **그래프 표(`entities` · `edges` · `observed_edges` · `evidence` · `v_edge_diff`)를 만지는 SQL 은
+이 파일에만 둔다** — `tests/test_graph_sql_lives_in_the_repository.py` 가 지킨다.
+
 관계 조회(get_neighbors/get_subgraph/find_path)는 호출자의 (tenant, clearance)를 필수로 받아
 양 끝 엔티티에 base_filter 를 강제한다 — 그래프 채널도 예외 없이 스코프를 지킨다.
 """
@@ -164,6 +167,14 @@ class PostgresGraphRepository:
     async def _execute(self, query: str, *args) -> str:
         async with self._pool.acquire() as conn:
             return await conn.execute(query, *args)
+
+    async def _fetchrow(self, query: str, *args):
+        async with self._pool.acquire() as conn:
+            return await conn.fetchrow(query, *args)
+
+    async def _fetchval(self, query: str, *args):
+        async with self._pool.acquire() as conn:
+            return await conn.fetchval(query, *args)
 
     async def get_neighbors(
         self, entity_rid: str, hops: int = 1, *, tenant: str, clearance: str
@@ -402,3 +413,228 @@ class PostgresGraphRepository:
             )
             for r in rows
         ]
+
+    # ── 이 아래는 2026-11-13 에 호출부에서 옮겨 온 SQL 이다 ─────────────────────────────────
+    #
+    # ⛔ **왜 여기로 (2026-11-12 구조 점검).** 그래프 표를 만지는 SQL 이 `api.py` · `cli.py` ·
+    # `index/graph_extractor.py` · `otel/diff_engine.py` · `otel/aggregator.py` 에 22곳 흩어져
+    # 있었다. 그중 `/graph` 와 `/diff` 의 증거 조회는 **같은 정책 필터를 두 벌** 갖고 있었고,
+    # `/diff` 쪽이 그 필터 없이 남아 있다가 2026-11-12 에야 고쳐졌다. 한 벌이면 그런 일이 없다.
+    # SQL 은 **글자 그대로** 옮겼다 — 동작은 바뀌지 않는다.
+
+    #: `count_active` 가 셀 수 있는 표. 표 이름을 SQL 에 끼워 넣지 않으려고 문장을 고정해 둔다.
+    _COUNT_ACTIVE = {
+        "entities": "SELECT COUNT(*) FROM entities WHERE status = 'active'",
+        "edges": "SELECT COUNT(*) FROM edges WHERE status = 'active'",
+        "observed_edges": "SELECT COUNT(*) FROM observed_edges WHERE status = 'active'",
+    }
+    _COUNT_ACTIVE_IN_TENANT = {
+        "edges": "SELECT COUNT(*) FROM edges WHERE status = 'active' AND tenant = $1",
+        "observed_edges": "SELECT COUNT(*) FROM observed_edges WHERE status = 'active' AND tenant = $1",
+    }
+
+    async def count_active(self, table: str, tenant: str | None = None) -> int:
+        """활성 행 수. ``tenant`` 를 안 주면 전체(`/status`·`nexus status` 의 운영 지표)."""
+        if tenant is None:
+            return await self._fetchval(self._COUNT_ACTIVE[table]) or 0
+        return await self._fetchval(self._COUNT_ACTIVE_IN_TENANT[table], tenant) or 0
+
+    async def last_observed_at(self):
+        """마지막 OTel 집계 시각(활성 관측 엣지의 최신 `updated_at`). 없으면 None."""
+        return await self._fetchval(
+            "SELECT MAX(updated_at) FROM observed_edges WHERE status = 'active'")
+
+    async def diff_type_counts(self) -> list:
+        """`v_edge_diff` 의 판정별 수 — `/status` 의 요약용(테넌트 구분 없음, 오늘과 같다)."""
+        return await self._fetch(
+            "SELECT diff_type, COUNT(*) as cnt FROM v_edge_diff GROUP BY diff_type")
+
+    async def find_entity_rid(self, name: str, tenant: str) -> str | None:
+        """이름으로 찾은 활성 엔티티의 rid. 없으면 None."""
+        row = await self._fetchrow(
+            "SELECT rid FROM entities WHERE name = $1 AND tenant = $2 AND status = 'active'",
+            name, tenant,
+        )
+        return row["rid"] if row else None
+
+    async def get_entity(self, rid: str):
+        """엔티티 상세(rid, name, entity_type, aliases, description). 없으면 None.
+
+        ⚠ 테넌트 조건이 없다 — 옮기기 전과 같다. rid 가 테넌트를 품고 있고(`nexus.rid`), 호출부는
+        범위 안에서 찾은 서브그래프의 중심 rid 로만 부른다.
+        """
+        return await self._fetchrow(
+            "SELECT rid, name, entity_type, aliases, description FROM entities WHERE rid = $1",
+            rid,
+        )
+
+    async def suggest_entities(self, q: str, tenant: str, limit: int) -> list:
+        """엔티티 자동완성 — 이름 부분 일치 · 별칭 일치 · 유사도."""
+        return await self._fetch(
+            """
+            SELECT rid, name, entity_type, aliases, description
+            FROM entities
+            WHERE status = 'active' AND tenant = $1
+              AND (
+                name ILIKE $2
+                OR $3 = ANY(aliases)
+                OR name % $4
+              )
+            ORDER BY similarity(name, $4) DESC
+            LIMIT $5
+            """,
+            tenant, f"%{q}%", q, q, limit,
+        )
+
+    async def edge_evidence(self, edge_rid: str, tenant: str, clearance: str) -> list:
+        """설계 엣지의 증거 청크 — **base_filter 를 건다** (SPEC-nexus-graph-scope-filter §4.3).
+
+        스코프 밖 청크의 본문이 그래프 증거로 새지 않게 한다. INNER JOIN + 필터라 스코프 밖
+        (또는 backing chunk 없는) 증거는 빠진다. `/graph` 와 `/diff` 가 이 한 벌을 쓴다 —
+        두 벌이던 때 `/diff` 쪽에만 필터가 없었다.
+        """
+        return await self._fetch(
+            """
+            SELECT ev.note, c.chunk_text, c.section_path, d.title as doc_title
+            FROM evidence ev
+            JOIN chunks c ON ev.evidence_rid = c.rid
+            JOIN documents d ON c.doc_rid = d.rid
+            WHERE ev.subject_rid = $1 AND ev.status = 'active'
+              AND c.tenant = $2 AND c.classification <= $3::classification_level
+              AND c.is_quarantined = false AND c.status = 'active'
+              AND d.status = 'active'
+            """,
+            edge_rid, tenant, clearance,
+        )
+
+    async def observed_trace_ref(self, observed_edge_rid: str, tenant: str):
+        """관측 엣지의 trace 참조(sample_trace_ids, trace_query_ref). 없으면 None."""
+        return await self._fetchrow(
+            "SELECT sample_trace_ids, trace_query_ref FROM observed_edges "
+            "WHERE rid = $1 AND tenant = $2",
+            observed_edge_rid, tenant,
+        )
+
+    async def ensure_entity(self, *, rid: str, tenant: str, source_kind: str, now,
+                            entity_type: str, name: str, aliases: list[str],
+                            description: str) -> None:
+        """엔티티를 넣는다. 있으면 그대로 두되, 내려간(`soft_deleted`) 것은 되살린다.
+
+        규칙의 이유는 호출부(`index/graph_extractor.py::ensure_entity_exists`)에 적혀 있다.
+        """
+        await self._execute(
+            """
+            INSERT INTO entities (
+                rid, rtype, tenant, classification, owner,
+                source_kind, status, created_at, updated_at,
+                entity_type, name, aliases, description
+            ) VALUES (
+                $1, 'entity', $2, 'INTERNAL', 'indexer',
+                $3::source_kind, 'active', $4, $4,
+                $5, $6, $7, $8
+            )
+            ON CONFLICT (tenant, entity_type, name) DO UPDATE
+                SET status = 'active', updated_at = EXCLUDED.updated_at
+                WHERE entities.status = 'soft_deleted'
+            """,
+            rid, tenant, source_kind, now,
+            entity_type, name, aliases, description,
+        )
+
+    async def save_extracted_edge(self, *, rid: str, tenant: str, now, edge_type: str,
+                                  from_rid: str, to_rid: str, confidence: float,
+                                  source_chunk_rid: str) -> None:
+        """문서에서 뽑은 설계 엣지를 넣는다(신뢰도는 큰 쪽을 남긴다).
+
+        ⚠ `upsert_edges` 와 비슷하지만 같지 않다 — 시각을 **호출부의 `now`** 로 찍고
+        (`upsert_edges` 는 DB 의 `now()`), 파이프라인 이름이 `graph-extractor-v1` 로 고정이다.
+        옮기면서 합치지 않았다: 합치면 동작이 바뀐다.
+        """
+        await self._execute(
+            """
+            INSERT INTO edges (
+                rid, rtype, tenant, classification, owner,
+                source_kind, status, created_at, updated_at,
+                edge_type, from_rid, to_rid, confidence, source_category,
+                prov_pipeline, prov_inputs
+            ) VALUES (
+                $1, 'edge', $2, 'INTERNAL', 'indexer',
+                'git', 'active', $3, $3,
+                $4, $5, $6, $7, 'DESIGNED',
+                'graph-extractor-v1', $8
+            )
+            ON CONFLICT (rid) DO UPDATE SET
+                confidence = GREATEST(edges.confidence, EXCLUDED.confidence),
+                updated_at = EXCLUDED.updated_at
+            """,
+            rid, tenant, now,
+            edge_type, from_rid, to_rid, confidence,
+            [source_chunk_rid],
+        )
+
+    async def add_text_evidence(self, *, rid: str, tenant: str, now, subject_rid: str,
+                                chunk_rid: str, note: str) -> None:
+        """엣지 ↔ 청크 증거(문서에서 뽑은 관계). 이미 있으면 그대로 둔다."""
+        await self._execute(
+            """
+            INSERT INTO evidence (
+                rid, rtype, tenant, classification, owner,
+                source_kind, status, created_at, updated_at,
+                subject_rid, evidence_rid, kind, weight, note
+            ) VALUES (
+                $1, 'evidence', $2, 'INTERNAL', 'indexer',
+                'git', 'active', $3, $3,
+                $4, $5, 'text_snippet', 0.15, $6
+            )
+            ON CONFLICT (rid) DO NOTHING
+            """,
+            rid, tenant, now,
+            subject_rid, chunk_rid, note,
+        )
+
+    async def upsert_trace_evidence(self, *, rid: str, tenant: str, subject_rid: str,
+                                    trace_query_ref: str, note: str) -> None:
+        """관측 엣지 ↔ trace 참조 증거(OTel 집계). 이미 있으면 시각만 갱신한다."""
+        await self._execute(
+            """
+            INSERT INTO evidence (
+                rid, rtype, tenant, classification, owner,
+                source_kind, status, created_at, updated_at,
+                subject_rid, evidence_rid, kind, weight, note
+            ) VALUES (
+                $1, 'evidence', $2, 'INTERNAL', 'otel-aggregator',
+                'otel', 'active', now(), now(),
+                $3, $4, 'trace_ref', 0.25, $5
+            )
+            ON CONFLICT (rid) DO UPDATE SET updated_at = now()
+            """,
+            rid, tenant, subject_rid, trace_query_ref, note,
+        )
+
+    async def tag_doc_only(self, edge_rid: str, tenant: str, now) -> None:
+        """설계 엣지에 `doc_only` 품질 플래그를 (한 번만) 단다."""
+        await self._execute(
+            """
+            UPDATE edges
+            SET quality_flags = array_append(
+                array_remove(quality_flags, 'doc_only'), 'doc_only'
+            ),
+            updated_at = $1
+            WHERE rid = $2 AND tenant = $3
+            """,
+            now, edge_rid, tenant,
+        )
+
+    async def tag_observed_only(self, observed_edge_rid: str, tenant: str, now) -> None:
+        """관측 엣지에 `observed_only` 품질 플래그를 (한 번만) 단다."""
+        await self._execute(
+            """
+            UPDATE observed_edges
+            SET quality_flags = array_append(
+                array_remove(quality_flags, 'observed_only'), 'observed_only'
+            ),
+            updated_at = $1
+            WHERE rid = $2 AND tenant = $3
+            """,
+            now, observed_edge_rid, tenant,
+        )

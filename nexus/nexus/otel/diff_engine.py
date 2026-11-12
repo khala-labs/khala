@@ -49,19 +49,12 @@ async def run_diff(
     )
 
     # 통계
-    report.total_designed = await db.fetch_val(
-        "SELECT COUNT(*) FROM edges WHERE status = 'active' AND tenant = $1",
-        tenant,
-    ) or 0
-
-    report.total_observed = await db.fetch_val(
-        "SELECT COUNT(*) FROM observed_edges WHERE status = 'active' AND tenant = $1",
-        tenant,
-    ) or 0
-
-    # Diff 조회 (v_edge_diff 뷰)
     pool = await db.get_pool()
     graph_repo = PostgresGraphRepository(pool)
+    report.total_designed = await graph_repo.count_active("edges", tenant)
+    report.total_observed = await graph_repo.count_active("observed_edges", tenant)
+
+    # Diff 조회 — 테넌트(·등급) 안에서만 (`GraphRepository.get_diff`)
     # 태깅은 **테넌트 전체**(등급 무관)로 한다 — 호출자의 등급에 따라 플래그가 달라지면 안 된다.
     # 응답으로 나가는 목록은 호출자의 등급으로 다시 거른다(`clearance` 가 주어질 때).
     all_diffs = await graph_repo.get_diff(tenant)
@@ -74,7 +67,7 @@ async def run_diff(
         report.diffs = visible
 
     # quality_flags 태깅
-    await _tag_quality_flags(all_diffs, tenant)
+    await _tag_quality_flags(all_diffs, tenant, graph_repo)
 
     logger.info("diff_complete",
                 designed=report.total_designed,
@@ -84,33 +77,19 @@ async def run_diff(
     return report
 
 
-async def _tag_quality_flags(diffs: list[DiffItem], tenant: str) -> None:
-    """Diff 결과에 따라 edge/observed_edge의 quality_flags 갱신."""
+async def _tag_quality_flags(diffs: list[DiffItem], tenant: str,
+                             graph_repo: PostgresGraphRepository | None = None) -> None:
+    """Diff 결과에 따라 edge/observed_edge의 quality_flags 갱신.
+
+    ``graph_repo`` 를 안 주면 공용 풀로 하나 만든다 — 호출 계약 `(diffs, tenant)` 는 그대로다.
+    """
+    if graph_repo is None:
+        graph_repo = PostgresGraphRepository(await db.get_pool())
     for diff in diffs:
         now = datetime.now(timezone.utc)
 
         if diff.flag == "doc_only" and diff.edge_rid:
-            await db.execute(
-                """
-                UPDATE edges
-                SET quality_flags = array_append(
-                    array_remove(quality_flags, 'doc_only'), 'doc_only'
-                ),
-                updated_at = $1
-                WHERE rid = $2 AND tenant = $3
-                """,
-                now, diff.edge_rid, tenant,
-            )
+            await graph_repo.tag_doc_only(diff.edge_rid, tenant, now)
 
         elif diff.flag == "observed_only" and diff.observed_edge_rid:
-            await db.execute(
-                """
-                UPDATE observed_edges
-                SET quality_flags = array_append(
-                    array_remove(quality_flags, 'observed_only'), 'observed_only'
-                ),
-                updated_at = $1
-                WHERE rid = $2 AND tenant = $3
-                """,
-                now, diff.observed_edge_rid, tenant,
-            )
+            await graph_repo.tag_observed_only(diff.observed_edge_rid, tenant, now)

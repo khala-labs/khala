@@ -15,6 +15,7 @@ import structlog
 import yaml
 
 from nexus import db
+from nexus.repositories.graph import PostgresGraphRepository
 from nexus.rid import (
     canonicalize_entity_name,
     edge_rid,
@@ -238,23 +239,10 @@ async def ensure_entity_exists(
     rid = entity_rid(tenant, entity_type, canonical)
     now = datetime.now(timezone.utc)
 
-    await db.execute(
-        """
-        INSERT INTO entities (
-            rid, rtype, tenant, classification, owner,
-            source_kind, status, created_at, updated_at,
-            entity_type, name, aliases, description
-        ) VALUES (
-            $1, 'entity', $2, 'INTERNAL', 'indexer',
-            $3::source_kind, 'active', $4, $4,
-            $5, $6, $7, $8
-        )
-        ON CONFLICT (tenant, entity_type, name) DO UPDATE
-            SET status = 'active', updated_at = EXCLUDED.updated_at
-            WHERE entities.status = 'soft_deleted'
-        """,
-        rid, tenant, source_kind, now,
-        entity_type, canonical, aliases or [], description,
+    await PostgresGraphRepository(await db.get_pool()).ensure_entity(
+        rid=rid, tenant=tenant, source_kind=source_kind, now=now,
+        entity_type=entity_type, name=canonical, aliases=aliases or [],
+        description=description,
     )
     return rid
 
@@ -278,46 +266,19 @@ async def save_edge_with_evidence(
         e_rid = edge_rid(tenant, candidate.edge_type, from_rid, to_rid)
         now = datetime.now(timezone.utc)
 
-        await db.execute(
-            """
-            INSERT INTO edges (
-                rid, rtype, tenant, classification, owner,
-                source_kind, status, created_at, updated_at,
-                edge_type, from_rid, to_rid, confidence, source_category,
-                prov_pipeline, prov_inputs
-            ) VALUES (
-                $1, 'edge', $2, 'INTERNAL', 'indexer',
-                'git', 'active', $3, $3,
-                $4, $5, $6, $7, 'DESIGNED',
-                'graph-extractor-v1', $8
-            )
-            ON CONFLICT (rid) DO UPDATE SET
-                confidence = GREATEST(edges.confidence, EXCLUDED.confidence),
-                updated_at = EXCLUDED.updated_at
-            """,
-            e_rid, tenant, now,
-            candidate.edge_type, from_rid, to_rid, candidate.confidence,
-            [candidate.source_chunk_rid],
+        graph_repo = PostgresGraphRepository(await db.get_pool())
+        await graph_repo.save_extracted_edge(
+            rid=e_rid, tenant=tenant, now=now, edge_type=candidate.edge_type,
+            from_rid=from_rid, to_rid=to_rid, confidence=candidate.confidence,
+            source_chunk_rid=candidate.source_chunk_rid,
         )
 
         # Evidence 저장 (edge ↔ chunk 연결)
         evi_rid = evidence_rid(e_rid, candidate.source_chunk_rid)
-        await db.execute(
-            """
-            INSERT INTO evidence (
-                rid, rtype, tenant, classification, owner,
-                source_kind, status, created_at, updated_at,
-                subject_rid, evidence_rid, kind, weight, note
-            ) VALUES (
-                $1, 'evidence', $2, 'INTERNAL', 'indexer',
-                'git', 'active', $3, $3,
-                $4, $5, 'text_snippet', 0.15, $6
-            )
-            ON CONFLICT (rid) DO NOTHING
-            """,
-            evi_rid, tenant, now,
-            e_rid, candidate.source_chunk_rid,
-            f"trigger: {candidate.trigger_text}",
+        await graph_repo.add_text_evidence(
+            rid=evi_rid, tenant=tenant, now=now, subject_rid=e_rid,
+            chunk_rid=candidate.source_chunk_rid,
+            note=f"trigger: {candidate.trigger_text}",
         )
 
         return e_rid
