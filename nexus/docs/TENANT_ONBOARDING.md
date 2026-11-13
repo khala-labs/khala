@@ -12,9 +12,11 @@ doc_type: runbook
 그렇다고 적었다.
 
 **테넌트가 무엇인가.** 코퍼스의 경계이자 **읽기 범위의 단위**다. 문서는 `documents.tenant` 로
-갈리고, 읽는 쪽은 principal 토큰의 `read_tenants` 로 갈린다. 요청이 보내는 테넌트 값은 무시된다
-(`auth/scope.py`). 그래서 「테넌트를 만든다」는 행위는 따로 없다 — **그 이름으로 처음 적재하는
-순간 생기고, 그 이름을 읽을 수 있는 principal 을 발급해야 비로소 누가 본다.**
+갈리고, 읽는 쪽은 principal 토큰의 `read_tenants` 로 갈린다. 요청은 principal 의 `read_tenants` 안의
+테넌트로 범위를 **좁힐** 수 있다. 범위를 넓힐 수는 없다. 범위 밖의 테넌트는 principal 자신의 테넌트로
+폴백하고 out of scope 로 로그에 남는다(`auth/scope.py:27-47`). 그래서 「테넌트를 만든다」는
+행위는 따로 없다 — **그 이름으로 처음 적재하는 순간 생기고, 그 이름을 읽을 수 있는 principal 을
+발급해야 비로소 누가 본다.**
 
 ---
 
@@ -38,16 +40,18 @@ doc_type: runbook
 **검색되지 않는 컬럼**에 넣는다(`docker-compose.yml` 의 reingest 블록 주석, 2026-09-18 실측).
 
 소스 폴더는 `.env` 의 `INGEST_SRC_PATH` 로 `nexus-app` 과 `nexus-reingest` 양쪽에
-`/ingest-src` 로 마운트된다. 2026-11-02 라이브는 `…/[projects] picasso/docs` 다. 두 번째
+`/ingest-src` 로 마운트된다. 2026-11-02 기준 라이브는 첫 프로젝트의 `docs/` 를 마운트했다. 두 번째
 프로젝트를 올리려면 **마운트를 하나 더 다는 compose 변경**이 필요하다(§3 의 한계와 같은 뿌리).
+`nexus-app` 의 `/ingest-src` 와 `/code-src` 마운트는 `docker-compose.override.yml`(52·59행)에 있어
+`-f docker-compose.yml` 만 지정하면 오버라이드를 건너뛰어 `/ingest-src` 없이 컨테이너가 뜬다.
 
 ```bash
 # .env 를 바꾼 뒤 — ⛔ `compose restart` 는 env 를 다시 읽지 않는다
-cd nexus && docker compose -f docker-compose.yml up -d nexus-app
+cd nexus && docker compose up -d nexus-app
 ```
 
 적재 전 **새 테넌트의 세대를 선언**한다. 선언은 테넌트별이고 append 다. 선언이 없으면 적재는
-**경고만 내고 통과**한다(fail-open, `index/generation.py:127-133`) — 선언해 두어야 어긋난 세대의
+**경고만 내고 통과**한다(fail-open, `index/generation.py:126-131`) — 선언해 두어야 어긋난 세대의
 실행이 거부된다(2026-08-10 에 선언 없이 호스트에서 돌려 768 컬럼에 들어간 사고가 이 명령의 유래다).
 
 ```bash
@@ -99,7 +103,7 @@ REINGEST_INTERVAL_SECONDS: ${REINGEST_INTERVAL_SECONDS:-3600}
 기본값이 없는 것은 의도다. 비면 `./docs`(khala 자기 문서)로 폴백해 **남의 코퍼스에 우리 문서를
 주기적으로 밀어 넣는** 사고를 막기 위해서다.
 
-**한계.** 서비스 하나에 테넌트 하나 · 소스 하나다. 2026-11-02 라이브는 `picasso` 가 쓰고 있다.
+**한계.** 서비스 하나에 테넌트 하나 · 소스 하나다. 2026-11-02 기준 첫 프로젝트가 쓰고 있었다.
 두 번째 테넌트를 주기 재적재하려면 compose 에 서비스를 하나 더 선언해야 한다(env 이름이
 전역이라 `REINGEST_TENANT_2` 류의 분리가 같이 필요). **이 변경은 아직 없다** — 첫 프로젝트는 수동
 `ingest` 로 시작하고, 주기화는 그 다음이다.
@@ -179,13 +183,13 @@ docker exec nexus-app python -m nexus.cli auth --help     # gen-token 등
 
 1. 그 프로젝트 리포의 CLAUDE.md 에 같은 문구를 넣되, 입구는 **MCP(`NEXUS_MCP_TOKEN`) 또는 HTTP
    bearer 토큰**으로 적는다. ⛔ **CLI `docker exec … query` 를 권하지 마라** — CLI 는 principal 을
-   넘기지 않아 질문이 보존되지 않고(`cli.py:398-400`), 그러면 아래 3 의 분모에 안 잡힌다. 이 리포의
+   넘기지 않아 질문이 보존되지 않고(`cli.py:384-388`), 그러면 아래 3 의 분모에 안 잡힌다. 이 리포의
    CLAUDE.md 가 CLI 를 권하는 것은 khala 자기 작업용이다. MCP 서버는 토큰을 넘기는 HTTP 클라이언트라
    API 가 principal 을 풀고 보존이 된다(`mcp/server.py:33-40`).
 2. 에이전트 principal 에 질의 텍스트 보존을 켠다. principal 은 **`tenant=<tenant>` · `read_tenants`
    하나 · clearance 고정**으로 발급한다 — API 가 보존 정책을 `principal.tenant` 로 찾기 때문이다
-   (`api.py:822-835`). 켜는 명령은 **아직 없다** — `query-text` 에는 `status | purge | export | disable`
-   만 있고, 켜는 것은 `query_retention` 행 삽입이다(`tests/test_query_text_retention.py:80` 의 INSERT 가
+   (`api.py:600-623` (`_read_scope_from_request`)). 켜는 명령은 **아직 없다** — `query-text` 에는 `status | purge | export | disable`
+   만 있고, 켜는 것은 `query_retention` 행 삽입이다(`tests/test_query_text_retention.py:76-80` 의 INSERT 가
    모양). `notice_shown` 이 비면 principal 과 무관하게 거부되므로 고지 참조를 넣어야 한다. 사람
    principal 은 고지 뒤 옵트인 원칙을 지킨다. 에이전트의 질문에도 사람이 준 문장이 실릴 수 있으니
    보존 기간은 짧게(권고 30일).
@@ -197,7 +201,7 @@ docker exec nexus-app python -m nexus.cli auth --help     # gen-token 등
 ## 9. 프로젝트가 끝났을 때
 
 - 검색에서 내리되 지우지 않는다: `nexus.cli doc --help`(hide/restore), `supersede`/`unsupersede`.
-- 보존 텍스트는 `query-text disable <tenant>` — 저장 텍스트와 옵트인 행을 **함께** 지우며 되돌릴
+- 보존 텍스트는 `query-text disable --tenant <t> --yes` — 저장 텍스트와 옵트인 행을 **함께** 지우며 되돌릴
   수 없다.
 - 재적재 컨테이너와 `/code-src` 마운트가 그 프로젝트를 가리키고 있으면 env 를 비우고 `up -d`.
   2026-11-02 현재 `/code-src` 가 그 상태다.
@@ -206,11 +210,13 @@ docker exec nexus-app python -m nexus.cli auth --help     # gen-token 등
 
 ## 부록 — 2026-11-02 라이브 배선 한 장
 
+2026-11-02 스냅샷이며 2026-11-11 기준 실행 중인 Nexus 배포가 없어 다시 확인할 수 없다.
+
 | 항목 | 값 |
 |---|---|
 | 임베딩 세대 | KURE-v1 · `embedding_1024` · 사이드카(`NEXUS_EMBEDDING_BACKEND=sidecar`) |
-| 테넌트 | `default`(제품 정책 · khala 자기 문서) · `design_docs` · `picasso`(주기 재적재) |
-| `/ingest-src` | picasso `docs/` |
+| 테넌트 | `default`(제품 정책 · khala 자기 문서) · `design_docs` · 첫 프로젝트의 테넌트(주기 재적재) |
+| `/ingest-src` | 첫 프로젝트의 `docs/` |
 | `/code-src` | 종료된 프로젝트의 플랫폼 코드 |
 | Slack 봇 | `NEXUS_SLACK_READ_TENANTS` 의 테넌트만, clearance 상한 PUBLIC |
 

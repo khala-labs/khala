@@ -19,13 +19,15 @@ tags:
 
 # Improvement loop — a production question becomes a label, a change becomes a version, and the two halves are compared by version
 
-> **인용 표기.** 파일 경로와 줄 번호는 전부 **2026-11-02~03 확인**이고, 파일 이동·개명으로 드리프트할
+> **인용 표기.** 파일 경로와 줄 번호는 전부 **2026-11-13 재확인**이고, 파일 이동·개명으로 드리프트할
 > 수 있다. 줄 번호가 안 맞으면 그 줄이 아니라 그 심볼을 찾아라.
 >
-> **판.** 4판이다. 1판 → Arbiter 비평 1차 21건(사이드카는 커밋 `1a3f19e` 의
+> **판.** 5판이다. 1판 → Arbiter 비평 1차 21건(사이드카는 커밋 `1a3f19e` 의
 > `.reviews/SPEC-nexus-improvement-loop.md`; 2차 비평이 같은 파일을 덮어썼다) → 2판 → 외부 모델(Codex)
 > 검토(`.reviews/SPEC-nexus-improvement-loop.codex-2026-11-03.md`, 「승인 불가」) → 3판 → Arbiter 비평
-> 2차 17건(현재 사이드카) → 4판. 3판이 Codex 로 바꾼 것은 §0.1, 4판이 2차 비평으로 바꾼 것은 §0.2.
+> 2차 17건(현재 사이드카) → 4판 → 새 저장소로 옮기며 현재 코드로 재확인(2026-11-13) → 5판. 3판이 Codex 로
+> 바꾼 것은 §0.1, 4판이 2차 비평으로 바꾼 것은 §0.2, 5판 변경은 §0.3 이다. 4판 파일은 이전 커밋에서 변경 없이
+> 옮겨졌고, 원장은 이제 `records/`(`records/specs`, `records/.reviews`, `records/adr`) 아래에 산다.
 
 ## 0. 판마다 무엇이 틀렸었나
 
@@ -48,7 +50,7 @@ tags:
 1. **「닫혔다」를 낮췄다.** n=1 은 순환의 재현이 아니라 **경로가 한 번 관통했다**는 것이다(I-015). 재현은
    두 번째 질문이다.
 2. **ADR-0002 의 게이트를 구현한다는 주장을 지웠다.** ADR-0002 의 gate ⓐ 는 **이해도 계측**(comprehension
-   meter) 게이트이고 관측된 문턱을 요구한다(`adr/ADR-0002-reframe-system-command-debt.md:145,152`). 14일
+   meter) 게이트이고 관측된 문턱을 요구한다(`records/adr/ADR-0002-reframe-system-command-debt.md:145,151-152`). 14일
    판정은 그 게이트가 아니라 **이 SPEC 자신의 멈춤 규칙**이다(I-005).
 3. **before 도 3회**다. 전후 표본이 비대칭이면 분산을 개선으로 읽는다(I-002).
 4. **코퍼스는 고침 구간에서 움직이지 않아야 한다.** `corpus_version` 은 읽기 범위 안 active 문서의 함수라
@@ -64,6 +66,17 @@ tags:
    필드다(`api.py:977-978`). 2차 비평 I-008 의 「출처 미제시」는 맞고 「없다」는 틀렸다. 생성 실패 판정은
    사람 눈이 아니라 `facts_present` 로 기계화했다(I-009). 「요구를 먼저 적고 문서를 넣는」 순서에는 요구가
    운영 질문에서 유도됐다는 **시각 증거**를 붙였다(I-011).
+
+### 0.3 4판 → 5판 (새 저장소로 옮기며 코드로 재확인, 2026-11-13)
+
+1. **생성 실패 부류의 `abstained` 조건은 성립할 수 없다.** `abstention()`(`nexus/nexus/llm/answer.py:117-119`)은 답변 근거가 0건일 때만 참이라 「스니펫 ≥1 이고 `abstained`」는 불가능하다. 4판부터 있던 오류다. 생성 실패는 `facts_present` 다수 거짓으로만 판정한다.
+2. **모델 id 는 응답에 있다.** `/search/answer` 응답의 `usage.model`(`llm/answer.py:291-293`)이고 스트림 `done` 도 같다. `search_log` 에는 없다. 그래서 조건 ④ 를 저장된 응답에서 기계 판정할 수 있고, 판정 조건으로 올린다(§3.4). 0.2-5 의 「응답에도 기록에도 없다」는 응답 쪽이 틀렸다.
+3. **답변 하니스는 공유 검색 경로를 타지 않는다.** `scripts/ko_eval_answer_run.py` 는 `hybrid_search` 를 직접 부르고(`:340`, top_k=10) 경로·엔티티 단계가 없다. HTTP 의 `/search/answer` 는 `nexus/nexus/search/answer_pipeline.py::retrieve_for_answer` 를 탄다. 그래서 하니스 회귀 검사는 HTTP 전후 실행과 다른 경로를 잰다 — 관통 판정은 HTTP 실행 기록으로만 하고 하니스 결과는 참고로 적는다.
+4. **MCP 는 U3 실행 기록을 못 남긴다.** `nexus_answer` 는 기본 `tenant="default"` 를 보내고(`mcp/server.py:185`), `read_tenants=(T,)` 인 principal 에서는 매 요청이 범위 밖 이벤트를 남기고 T 로 떨어진다(`auth/scope.py:27-47`). 그리고 MCP 도구는 서식 텍스트만 돌려줘 세 버전 값·`usage` 가 없다. U3 의 before/after 는 직접 HTTP 로만 받는다. MCP 는 U1 유입으로 쓴다.
+5. **`corpus_version` 은 호출자 등급의 함수이기도 하다** — 범위 안 active · 비격리 문서 중 **호출자 등급 이하**(`search/versions.py:59-98`). 조건 ⑤ 의 clearance 고정이 ③ 에도 필요하다.
+6. **A2A 는 이제 principal 을 받는다**(`a2a/server.py:300,317`). 그래도 `record_search` 에 principal 을 넘기지 않아 질문을 보존하지 않는다(`:384-389`). 넓히지 않는다(§3.2, ADR-0004:151).
+7. **U4 의 `nexus.cli health` 는 없다.** 새로 만든다. 지금은 `status` 가 7일 요약을 찍는다(`cli.py:805-812`).
+8. **U0-a·b 는 여전히 결함이다.** `query-text export` 는 `tenant` 와 `seen_count` 만 거르고(`cli.py:1697-1700`) `kind` 를 내지 않는다. `first_seen` 은 이미 낸다(`:1702`). 만료된 보존 행은 `purge_schedule.run_once`(API 기동 시 시작, `api.py:115-116`)가 지우므로 새는 구간은 purge 사이와 API 가 안 떠 있을 때다. `purge_pointers()` 는 테스트만 부른다(`tests/test_answer_feedback_store.py:316`).
 
 ## 1. Goal
 
@@ -84,15 +97,16 @@ khala 의 답변 품질을 고치는 순환의 **경로를 끝까지 한 번 관
 ### 2.1 관측
 
 - `search_log`(`nexus/init.sql:446`): `path` · `route` · `tenant` · `read_scope` · `no_answer`(= `len(hits)==0`,
-  `signals.py:235`) · **`llm_failed`**(`init.sql:468`) · `n_citations` · `unverified_citations`, migration
+  `search/signals.py:233`) · **`llm_failed`**(`init.sql:468`) · `n_citations` · `unverified_citations`, migration
   045/047/048 의 `prompt_version` · `corpus_version` · `search_fingerprint` · `degraded`. **API 응답도 세 버전
-  값과 `abstained` · `abstain_reason` 을 돌려준다**(`api.py:977-978,1022-1031`).
-- `prompt_version` 의 한계 넷(`llm/prompt_version.py:18,30,80-82`). `search_fingerprint` 는 런타임 설정의
-  함수(`search/versions.py:34-57`). `corpus_version_of` 는 **읽기 범위 안 active 문서**의 함수
-  (`versions.py:60-87`) — 라이브 적재 한 건에 움직인다.
-- **LLM 공급자·모델은 응답에도 기록에도 없다.** `NEXUS_LLM_MODEL` env(`providers/llm.py:352`). 평가 제안 1.
+  값(`api.py:1020,1029-1030`)과 `abstained` · `abstain_reason`(`api.py:975-976`, 스트림 `:1521-1522`)을 돌려준다**.
+- `prompt_version` 의 한계(`llm/prompt_version.py` 머리말 15-32: 재료는 모듈 소스 전체, 코드만 본다).
+  `search_fingerprint` 는 런타임 설정의 함수(`search/versions.py:34-56`). `corpus_version_of` 는
+  **읽기 범위 안 active 문서 · 호출자 등급 이하**의 함수(`search/versions.py:59-98`) — 라이브 적재 한 건에 움직인다.
+- **모델 id 는 응답(`usage.model`, `llm/answer.py:291-293`)에 있고 `search_log` 에는 없다.** 생성 실패로
+  LLM 호출이 끝나지 않으면 `usage` 가 비어 있다. `NEXUS_LLM_MODEL` env(`providers/llm.py:353`).
 - `v_search_health`(`init.sql:480-494`): 7일 · `path, route` · 비율 열. 7일 행 3(전부 CLI).
-- **principal 은 저장되지 않는다**(`signals.py:468,486`).
+- **principal 은 저장되지 않는다**(`query_retention.py:69-70`).
 
 ### 2.2 피드백
 
@@ -102,24 +116,25 @@ khala 의 답변 품질을 고치는 순환의 **경로를 끝까지 한 번 관
 
 ### 2.3 질의 텍스트 보존
 
-- 게이트 셋(`query_retention.py:76-88`): 허용목록 · `notice_shown` · 행 존재. 켜는 CLI 없음.
-- `kind='user'|'rewritten'`(migration 020:32). **`export` 는 `kind` 도 만료도 안 본다**(`cli.py:1707-1709`).
-- HTTP 와 MCP 는 보존된다. CLI(`cli.py:398-400`)·A2A(`a2a/server.py:366-371`)는 안 된다.
+- 게이트 셋(`query_retention.py:78-92`): 허용목록 · `notice_shown` · 행 존재. 켜는 CLI 없음.
+- `kind='user'|'rewritten'`(migration 020:32). **`export` 는 `kind` 도 만료도 안 본다**(`cli.py:1697-1700`, `first_seen` 은 이미 낸다(`:1702`)).
+- HTTP 와 MCP 는 보존된다(`api.py:738,952,1510`). CLI(`cli.py:384-388`)·A2A(`a2a/server.py:384-389`, principal 은 받지만 넘기지 않는다)는 안 된다.
 
 ### 2.4 평가
 
 - 공개 팩 라벨은 **공개 코퍼스라서** 커밋된다(`answer-labels.yaml:3`). 라이브 테넌트는 **Pack B**
   (`scripts/ko_eval_packb.py`): 스냅샷 테넌트 + `tests/eval/local/` 매니페스트, `.gitignore:20`. `extend` ·
   `align`, ⛔ `freeze` 재호출 금지.
-- 답변 하니스(`ko_eval_answer_run.py`): 라벨 + 매니페스트(`:248,259`), `corpus.tenant == --tenant`(`:254`),
-  `--limit` 앞 N 건(`:260`), 리포트는 라벨 옆(`:76,225,385`), LLM 질의당 1회, `search_log` 에 안 씀(`:481`).
+- 답변 하니스(`ko_eval_answer_run.py`): 라벨 + 매니페스트(`:248,259`), `corpus.tenant == --tenant`(`:254-257`),
+  `--limit` 앞 N 건(`:261`), 리포트는 라벨 옆(`:76,225`), LLM 질의당 1회, `hybrid_search` 를 직접 부른다(`:340`) —
+  HTTP 경로(`retrieve_for_answer`)와 다르다, `search_log` 에 안 씀(`:482-483`).
 - provenance 닫힌 집합(`ko_eval_labels.py:47`). `label_authoring_check.py` 는 `ko_eval_labels.check` 를
-  안 부르고(`:37`) gold 본문이 DB 에 있어야 한다(`:117`). 채점기 `facts_present(must_contain, text)`
+  안 부르고(`:37`) gold 본문이 DB 에 있어야 한다(`:118`). 채점기 `facts_present(must_contain, text)`
   (`ko_eval_answer_quality.py:116`), `attribute_facts`(`:133`).
 
 ### 2.5 변경 게이트 · 릴리스
 
-Arbiter 는 SPEC/ADR 만 막는다. 라이브는 `--reload`. `index_generation_events` 는 세대의 사건이다.
+Arbiter 는 SPEC/ADR 만 막는다. 라이브는 `--reload`(`nexus/Dockerfile`). `index_generation_events`(migration 014)는 세대의 사건이다.
 
 ## 3. Design
 
@@ -151,7 +166,7 @@ Arbiter 는 SPEC/ADR 만 막는다. 라이브는 `--reload`. `index_generation_e
   `refused_no_notice` 카운터. ③ 후보 없음 → 다음 14일. **③ 이 3회 연속이면 U2 의 세 부류 기준을
   재검토하고, 6회 연속이면 이 SPEC 을 멈추고 소유자에게 돌린다**(I-017). 「주 10건」 문턱은 두지 않는다.
 - 그 프로젝트 리포 CLAUDE.md 의 「khala 를 먼저 치라」는 **전제**이고 입구는 MCP/HTTP 토큰이다
-  (`TENANT_ONBOARDING.md` §8).
+  (`nexus/docs/TENANT_ONBOARDING.md` §8).
 
 ### 3.3 U2 — 선별: 현재 조건의 재검색, 세 부류, 보호된 자리
 
@@ -162,9 +177,10 @@ Arbiter 는 SPEC/ADR 만 막는다. 라이브는 `--reload`. `index_generation_e
   | 부류 | 판정(응답 필드) | 보통의 고침 |
   |---|---|---|
   | 검색 실패 | `evidence_snippets` 0건 | 코퍼스 · 검색 설정 |
-  | 생성 실패 | 스니펫 ≥1 이고 (`abstained == true` 또는 후보 요구에 대한 `facts_present` 가 다수 거짓) | 프롬프트 · 코퍼스 |
+  | 생성 실패 | 스니펫 ≥1 이고 후보 요구에 대한 `facts_present` 가 다수 거짓 | 프롬프트 · 코퍼스 |
   | 근거 틀림 | 👎 `wrong_evidence`, 또는 `unverified_citations > 0` | 검색 설정 · 랭킹 · supersede |
 
+  `abstained` 는 스니펫 0건과 같은 조건이라(§0.3-1) 검색 실패 부류에 이미 들어 있다.
   `degraded` 만 찍힌 건은 후보가 아니다(`hybrid.py:371`, 일시 장애).
 - provenance: 보존 질문 · 스레드에서 채운 👎 → `from_user_query`; 하니스 실패 라벨 → 원래 값 유지, 「실제
   트래픽 라벨」에 세지 않는다.
@@ -188,25 +204,28 @@ Arbiter 는 SPEC/ADR 만 막는다. 라이브는 `--reload`. `index_generation_e
 
 ### 3.4 U3 — 관통: 한 질문의 보호된 실행 기록, 두 겹
 
+before/after 실행은 **직접 HTTP `/search/answer`** 로 보낸다(MCP 는 아니다, §0.3-4).
+
 `tests/eval/local/<tenant>/runs/<qid>/`:
 
 - **원문 겹**(만료 대상): `before-1..3.json` · `after-1..3.json` — 요청 옵션 전체 · principal 의 `tenant` ·
   clearance · 토큰 이름 · 응답 전체(답변 · `evidence_snippets` · 세 버전 값 · `abstained` · `unverified_citations`).
 - **환원본 겹**(남는다): `record.json` — qid · 날짜 · 고침 종류(코퍼스/프롬프트/검색 설정) · PR 또는 적재
   명령 · 전후 세 버전 값 · 전후 `facts_present` 결과 6개 · 요청 옵션 해시 · 응답 해시 6개 · git commit ·
-  라벨 revision · 공급자·모델 **자기 신고**(env, 판정에 쓰지 않음). 원문 없음.
+  라벨 revision · 응답의 `usage.model` 6개. 원문 없음.
 - **관통 조건**(기계 판정):
   ① before 3회 중 2회 이상이 U2 의 세 부류 중 하나.
   ② after 3회 중 2회 이상 요구 성립(`facts_present` 다수).
   ③ `record.json` 이 지목한 버전 값만 전후 다르고 나머지 둘은 **before 3회 · after 3회 전부 같다.**
-  ⑤ 요청 옵션 해시 · principal `tenant` · clearance · 토큰 이름이 6회 전부 같다(I-012).
-  (④ 공급자·모델은 **기록만** 한다 — 평가 제안 1 이 들어오면 조건으로 올린다.)
+  ④ 모델을 부른 회차(스니펫 ≥1)는 전부 `usage.model` 이 있고 같다(§0.3-2). 스니펫 0건 회차는 모델을
+  부르지 않으므로 ④ 에서 뺀다. 스니펫이 있는데 `usage` 가 비면(생성 실패) ④ 는 거짓이다.
+  ⑤ 요청 옵션 해시 · principal `tenant` · clearance · 토큰 이름이 6회 전부 같다(I-012). (⑤ 의 clearance 는 ③ 의 `corpus_version` 에도 걸린다, §0.3-5).
 - **③ 을 지키는 절차**(I-001): before 는 고침 **직전 한 시간 안**에 받는다. 고침 구간(before-1 → after-3)
   동안 T 에 적재·개정·supersede 를 하지 않는다(T 는 수동 적재라 멈출 수 있고, 주기 재적재가 걸려 있으면
   그 컨테이너를 그 구간만 멈춘다). 코퍼스 고침이면 지목 값이 `corpus_version` 이고 그 적재 하나만 한다.
 - 하니스는 **회귀 검사**로 따로 돈다: 고침 PR 에 `ko_eval_answer_run.py --qid <qid>`(추가 필요) 3회 실패
-  목록 차이, 백엔드 선언(키리스면 지출 0), 실행별 `--out-dir`.
-- `ENGINEERING_LOG` 한 줄(공개): qid · 고침 종류 · 지목 값 · 전후 3회 결과. 원문 없음.
+  목록 차이, 백엔드 선언(키리스면 지출 0), 실행별 `--out-dir`. 다른 경로를 재므로(§0.3-3) **참고**이지 관통 판정이 아니다.
+- `docs/src/content/docs/engineering-log.md` 한 줄(공개): qid · 고침 종류 · 지목 값 · 전후 3회 결과. 원문 없음.
 - `prompt_version` PR 본문 대조(CI)는 첫 관통 뒤.
 
 ### 3.5 U4 — 운영 관측: 버전별 집계 (첫 관통 뒤)
@@ -216,7 +235,7 @@ Arbiter 는 SPEC/ADR 만 막는다. 라이브는 `--reload`. `index_generation_e
   `n_citations_sum` · `unverified_citations_sum` · `first_ts` · `last_ts`. **비율 없음, 억제 없음.**
 - 한계를 뷰 주석에 적는다: **생성의 기권(`abstained`)은 `search_log` 에 없어** 이 집계가 못 본다. 생성
   실패의 집계는 라벨 하니스 몫이다.
-- `nexus.cli health --by-version --tenant T`, `n<10` 에 `(표본 부족)` 표시. `v_search_health` 는 그대로.
+- 새 명령 `nexus.cli health --by-version --tenant T`(지금은 없다, §0.3-7), `n<10` 에 `(표본 부족)` 표시. `v_search_health` 는 그대로.
 
 ### 3.6 U5 — 릴리스 기록 (두 번째 관통 뒤, 선택)
 
@@ -240,8 +259,8 @@ Arbiter 는 SPEC/ADR 만 막는다. 라이브는 `--reload`. `index_generation_e
 | U0-a | `rewritten` 1 + 만료 1 + 표식 1 + 정상 1 → export 정상 1 | 필터 빼면 4 |
 | U0-b | 91일 포인터 → `run_once` 뒤 NULL | 안 돌리면 그대로 |
 | U1 | 표식 고유 질문 HTTP → export(표식 포함) `kind=user` · `seen_count=1`; 재전송 → `seen_count=2`, 행 수 동일 | `--notice` 없는 enable 거부; CLI 로 다른 고유 질문 → export 에 없음; 공유 토큰 두 세션 → 전제 위반을 런북 검사가 잡음(문서 검사) |
-| U2 | 후보 3건의 부류가 응답 필드와 `facts_present` 로 재현 | `degraded` 만 → 0; `expiry.json` 의 `expires_at` 을 지나게 clock 을 옮기면 두 트리거 모두 삭제; `requirement_signed_at` 이 적재 시각보다 **뒤**인 라벨은 저술 검사가 거부; U0-c 뒤 서명 없는 라벨은 0 이 아닌 코드 |
-| U3 | fixture 12파일(before×3 · after×3 · record · expiry 등)에서 ①②③⑤ 참 | before 중 2회가 성립이면 ① 거짓; 지목 외 값이 한 회차만 달라도 ③ 거짓; `top_k` 다른 after 하나 → ⑤ 거짓; 원문 겹 만료 뒤 `record.json` 으로 ①②③⑤ 를 **재판정**할 수 있음을 단언 |
+| U2 | 후보 3건의 부류가 응답 필드와 `facts_present` 로 재현 | `degraded` 만 → 0; `expiry.json` 의 `expires_at` 을 지나게 clock 을 옮기면 두 트리거 모두 삭제; `requirement_signed_at` 이 적재 시각보다 **뒤**인 라벨은 저술 검사가 거부; U0-c 뒤 서명 없는 라벨은 0 이 아닌 코드; 스니펫 ≥1 · `abstained=false` · `facts_present` 다수 거짓 → 생성 실패 |
+| U3 | fixture 12파일(before×3 · after×3 · record · expiry 등)에서 ①②③④⑤ 참 | before 중 2회가 성립이면 ① 거짓; 지목 외 값이 한 회차만 달라도 ③ 거짓; 스니펫이 있는 after 하나의 `usage.model` 이 다르거나 비면 ④ 거짓, 스니펫 0건 before 의 빈 `usage` 는 ④ 에 영향 없음; `top_k` 다른 after 하나 → ⑤ 거짓; 원문 겹 만료 뒤 `record.json` 으로 ①②③④⑤ 를 **재판정**할 수 있음을 단언 |
 | U4 | path · clearance · 빈 버전 · NULL 측정값 섞인 fixture 에서 그룹별 개수 · `n_citations_measured` 정확 | 비율 열 없음(스키마); `n=9` 도 전부 값 |
 | 전체 | disposable 테스트 테넌트에서 §3.4 디렉터리를 끝까지 만들고 네 조건을 기계 판정 | — |
 
@@ -251,7 +270,7 @@ Arbiter 는 SPEC/ADR 만 막는다. 라이브는 `--reload`. `index_generation_e
 - **사람 문장**: `retain_days` 30 · U0-a · 사이드카 만료 ≤ 보존 만료 · `query-text status` 월 1회.
 - **같은 조건 실패**: ③·⑤ 가 거짓이면 기록은 남되 「한 고침」이 아니다. 섞인 비교를 통과시키지 않는다.
 - **고침 구간의 적재 정지**가 운영과 충돌할 수 있다. T 가 수동 적재인 첫 프로젝트에서만 이 절차를 쓴다.
-- **`prompt_version` 한계 넷**: 프롬프트 고침인데 값이 안 바뀌면 ③ 이 거짓 — 해시 대상을 따로 고친다.
+- **`prompt_version` 의 한계**: 프롬프트 고침인데 값이 안 바뀌면 ③ 이 거짓 — 해시 대상을 따로 고친다.
 - **Pack B 재서명 비용**: 코퍼스 고침마다 `extend`/`align`.
 - **③ 무한 연기**: 상한 3회/6회(§3.2).
 
