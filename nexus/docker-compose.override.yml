@@ -46,6 +46,14 @@ services:
       # 로컬 dev 웹 온램프용 고정 토큰(.env 로 덮어쓰기 가능). 설정 시 앱이 INTERNAL local-dev
       # principal 을 등록하고 웹이 /auth/dev-token 으로 받아 자동 사용한다. 리포 config 는 불변.
       NEXUS_DEV_TOKEN: ${NEXUS_DEV_TOKEN:-nexus-local-dev}
+      # local-dev 의 읽기 범위. `env_file` 로만 들어오면 셸 값으로 덮어쓸 수 없어서(compose 에서
+      # `env_file` 은 보간이 아니라 파일 그대로다) 새 테넌트를 한 번 시험하려 해도 `.env` 를
+      # 고쳐야 했다. 보간으로 받으면 셸 값 > `.env` 순서가 된다. 비면 범위 선언 없음(= 자기 테넌트
+      # 하나)으로 앱이 읽는다 — 변수가 없을 때와 같다. 절차는 `.env.example` 의 이 변수 옆.
+      NEXUS_DEV_READ_TENANTS: ${NEXUS_DEV_READ_TENANTS:-}
+      # local-dev 하나의 답변 백엔드(`auth/config.py`). 비면 프로세스 기본값을 따른다.
+      NEXUS_DEV_LLM_PROVIDER: ${NEXUS_DEV_LLM_PROVIDER:-}
+      NEXUS_DEV_CLEARANCE_VERIFIED: ${NEXUS_DEV_CLEARANCE_VERIFIED:-}
     volumes:
       # CODE_SRC_PATH 미설정 시 placeholder(./docs)로 폴백해 compose 에러 방지.
       # 코드 상수 해석을 쓰려면 .env에 CODE_SRC_PATH 설정 → config code_source.repo_path: /code-src

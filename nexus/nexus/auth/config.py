@@ -119,6 +119,14 @@ class AuthConfig:
                 # 이 표시가 없으면 기동이 거부된다(SPEC-nexus-per-principal-answer-backend §4.4).
                 "owner": True,
             }
+            # 답변 백엔드 — 이 신원 **하나만** 고른다. 개발 상자는 기본값을 `anthropic` 으로 두고
+            # 이 변수로 local-dev 만 브리지에 보낸다(SPEC-nexus-per-principal-answer-backend §4.3
+            # 이 처방한 모양). 기본값 자체를 claude-code 로 두면 owner 가 아닌 신원(설명 층 ·
+            # 슬랙 코퍼스)이 하나만 있어도 기동이 거부된다 — 2026-11-14 실측. 값의 검사(빈 값 ·
+            # 모르는 값 · 별칭 `claude` 거부)는 다른 principal 과 같은 함수가 한다.
+            dev_provider = os.getenv("NEXUS_DEV_LLM_PROVIDER", "")
+            if dev_provider.strip():
+                entry["llm_provider"] = dev_provider
             # 읽기 범위 — 슬랙과 **같은 잠금**을 쓴다(`_validate_read_tenants`).
             #
             # ⛔ **왜 이것이 없어서 문제였나 (실측 2026-09-03).** 컷오버는 `slack-bot` 하나에만

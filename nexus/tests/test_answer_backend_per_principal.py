@@ -254,3 +254,57 @@ def test_a_bridge_principal_never_falls_back_to_the_key(default_anthropic, monke
     svc = llm_for(Principal(name="me", tenant="default", clearance="PUBLIC",
                             llm_provider="claude-code", owner=True))
     assert isinstance(svc._backend, P._ClaudeCodeBackend)
+
+
+
+# ── 실물 config.yaml 이 개발 상자 모양에서 뜨는가 ────────────────────────────────────
+
+def _shipped_config() -> dict:
+    import pathlib
+
+    import yaml
+
+    return yaml.safe_load((pathlib.Path(__file__).resolve().parents[1] / "config.yaml")
+                          .read_text(encoding="utf-8"))
+
+
+def test_the_shipped_config_boots_on_the_dev_box_shape(monkeypatch, default_anthropic):
+    """⛔ **실측 2026-11-14.** 개발 상자는 기본값을 claude-code 로 두고 있었고, `config.yaml` 의
+    설명 층 신원과 `.env` 의 슬랙 코퍼스 신원이 owner 가 아니어서 앱이 lifespan 에서 기동을
+    거부했다. 위의 검사들은 손으로 만든 항목만 봐서 **배포가 읽는 실물 파일**은 이 규칙을
+    통과해 본 적이 없었다.
+
+    고친 모양: 기본값 anthropic + `NEXUS_DEV_LLM_PROVIDER=claude-code` — 브리지는 local-dev 하나.
+    """
+    monkeypatch.setenv("NEXUS_DEV_TOKEN", "x" * 32)
+    monkeypatch.setenv("NEXUS_DEV_LLM_PROVIDER", "claude-code")
+    monkeypatch.setenv("NEXUS_SLACK_CORPUS_DESIGN", "tok|design_docs")
+    auth = AuthConfig.from_dict(_shipped_config())
+    auth.validate_startup()
+
+    resolved = {p["name"]: bc.principal_provider(p, p["name"]) or bc.process_default()
+                for p in auth.principals}
+    assert {n for n, b in resolved.items() if b == bc.BRIDGE} == {"local-dev"}, resolved
+    token = "x" * 32
+    assert resolve_principal(token, auth.principals).llm_provider == "claude-code"
+
+
+def test_the_old_dev_box_shape_is_still_refused(monkeypatch, default_bridge):
+    """규칙이 느슨해지지 않았다 — 기본값이 브리지인데 owner 아닌 신원이 있으면 여전히 거부."""
+    monkeypatch.setenv("NEXUS_DEV_TOKEN", "x" * 32)
+    with pytest.raises(RuntimeError, match="NEXUS_DEV_LLM_PROVIDER=claude-code"):
+        AuthConfig.from_dict(_shipped_config()).validate_startup()
+
+
+@pytest.mark.parametrize("bad", ["claude", "gemini", "  "])
+def test_the_dev_backend_variable_is_checked_like_any_principal(monkeypatch, default_anthropic,
+                                                                bad):
+    monkeypatch.setenv("NEXUS_DEV_TOKEN", "x" * 32)
+    monkeypatch.setenv("NEXUS_DEV_LLM_PROVIDER", bad)
+    auth = AuthConfig.from_dict({"auth": {"mode": "enforced", "principals": []}})
+    if not bad.strip():   # 공백은 「미설정」 — 기본값을 따른다
+        auth.validate_startup()
+        assert "llm_provider" not in auth.principals[0]
+        return
+    with pytest.raises(RuntimeError, match="local-dev"):
+        auth.validate_startup()

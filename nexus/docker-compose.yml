@@ -70,7 +70,10 @@ services:
     container_name: nexus-embed
     profiles: ["embed"]
     ports:
-      - "8080:8080"
+      # 호스트 쪽 포트만 바꿀 수 있다. 앱은 compose 네트워크로 `nexus-embed:8080` 에 닿으므로
+      # 이 값과 무관하다 — 호스트의 다른 서비스가 8080 을 쥐고 있으면 사이드카가 아예 안 뜨던
+      # 것(2026-11-14 실측: `port is already allocated`)을 비켜 가는 문이다.
+      - "${EMBED_HOST_PORT:-8080}:8080"
     environment:
       EMBED_MODEL: KURE-v1
       EMBED_CHECKPOINT: nlpai-lab/KURE-v1
