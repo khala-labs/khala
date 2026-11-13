@@ -1,9 +1,11 @@
 # Arbiter Index
 
-## 🔴 미검토 (1)
+## 🔴 미검토 (3)
 
 | id | title | approved_by | date | linked_adrs |
 |---|---|---|---|---|
+| SPEC-nexus-answer-images | Images in and out of the answer: a caller may attach one image, and a machine-read citation can show the image it was read from |  | 2026-11-13T05:48:30Z | ADR-0004, ADR-0008, ADR-0010 |
+| SPEC-nexus-answer-visuals | Answers can carry interactive visuals as declarative specs, and every value in a visual is checked against the evidence like the text is |  | 2026-11-13T05:48:30Z | ADR-0004 |
 | SPEC-specledger-a2a-publish-phase3 | Phase 3 — specledger publish to Nexus as an A2A task |  | 2026-06-18 | ADR-0001 |
 
 ## 🟡 검토중 (2)
