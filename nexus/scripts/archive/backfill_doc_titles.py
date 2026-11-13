@@ -7,8 +7,8 @@ title 이 파일명 폴백(source_uri basename)인 문서는 이 스크립트로
 멱등: title 이 파일명 폴백과 정확히 같은 문서만 손댄다(이미 실제 제목이면 skip).
 기본 dry-run. 적용하려면 --apply.
 
-    docker exec nexus-app python -m scripts.backfill_doc_titles          # dry-run
-    docker exec nexus-app python -m scripts.backfill_doc_titles --apply  # 적용
+    docker exec nexus-app python -m scripts.archive.backfill_doc_titles          # dry-run
+    docker exec nexus-app python -m scripts.archive.backfill_doc_titles --apply  # 적용
 """
 
 from __future__ import annotations
