@@ -84,4 +84,6 @@ def check_principal_backends(principals: list[dict], *, permissive: bool = False
             raise RuntimeError(
                 f"{surface}: principal {who!r} resolves to the {BRIDGE!r} backend but is not "
                 "marked owner: true — only the subscription holder's own identities may use the "
-                "keyless bridge (SPEC-nexus-per-principal-answer-backend)")
+                "keyless bridge (SPEC-nexus-per-principal-answer-backend). On a dev box, set "
+                "NEXUS_LLM_PROVIDER=anthropic and NEXUS_DEV_LLM_PROVIDER=claude-code so only the "
+                "local-dev identity uses the bridge")

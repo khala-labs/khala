@@ -13,7 +13,8 @@
 docker exec nexus-app python -m nexus.cli query "질문" --no-answer
 
 # 합성된 답이 필요할 때(인용 포함, 키리스 브리지로 ~60초, 지출 0)
-docker exec nexus-app python -m nexus.cli query "질문"
+# CLI 는 principal 이 없어 프로세스 기본값(anthropic)을 읽는다 — 브리지는 -e 로 고른다
+docker exec -e NEXUS_LLM_PROVIDER=claude-code nexus-app python -m nexus.cli query "질문"
 
 # 팀의 설계·PR 코퍼스를 볼 때
 docker exec nexus-app python -m nexus.cli query "질문" --tenant design_docs --no-answer
