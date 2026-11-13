@@ -114,6 +114,24 @@ tested was never the version we declared.
   Scope by tool when it helps, e.g. `feat(nexus): add review grounder`.
 - Keep each PR scoped to a single tool and a single concern where possible.
 
+### Pull request descriptions
+
+Write pull request descriptions in English. A description is public and permanent in practice (editing leaves a history); it should explain the change to a reader who was not in the conversation, and nothing else.
+
+Descriptions follow this fixed structure, in this order:
+- **Summary**: Heading `## Summary`. Write one to three sentences: what the change does and which problem in the repository it addresses.
+- **Changes**: Heading `## Changes`. Provide bullets of what changed, grouped by file or area.
+- **Behaviour changes**: Heading `## Behaviour changes`. State anything a caller or operator must know: response fields, defaults, permissions, and dependencies. Write `None` if there are none.
+- **Verification**: Heading `## Verification`. State what was actually run and its result, and also what was not verified and why (for example, tests that only run in CI, or no deployment to check against).
+- **Related**: Heading `## Related`. List SPEC/ADR ids and related pull requests as `khala-labs/<repo>#<n>`. Leave the section out if there is nothing.
+
+Never in a description:
+- **Decision process**: Who chose what, what is still undecided, and review opinions from conversations. Decisions live in SPECs, ADRs, or `OPEN.md`; the description cites their id.
+- **Project weaknesses**: Assessments of the project or its weaknesses that the change does not address. Those become `OPEN.md` items.
+- **Tooling and session detail**: Which drafting tool, assistant, or agent wrote text, local scratch paths, and reviewer model names. The generated-with attribution line some tools append at the end is kept.
+- **Names and real page ids**: Organization, person, partner, or external project names, and real page ids (the fingerprint scan checks part of this; it is not exhaustive).
+- **Numbers without meaning**: counts belong in `## Verification` as results.
+
 ## Running the local guards
 
 - **Install the hooks once:** `task hooks`. Two layers — `commit-msg` refuses a partner

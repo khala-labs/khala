@@ -46,6 +46,7 @@ docker exec nexus-app python -m nexus.cli query "질문" --tenant design_docs --
   거기서 결함을 찾으면(예: 검증 상한이 컬럼보다 커서 저장이 깨지는 것) **찾아서 정확히
   전달하는 것까지가 내 몫**이고, 고치는 것은 개발진이다. 2026-08-31 지시.
 - **커밋 메시지·PR 본문은 영문**이고, 조직명·개인명·실 페이지 ID 를 넣지 않는다.
+  PR 본문의 구조와 넣지 않을 것은 `CONVENTIONS.md` §Pull request descriptions 를 따른다.
   `python scripts/fingerprint_scan.py` 가 `git add` 뒤에 검사한다.
 - **개발 실행에 돈을 쓰지 않는다.** LLM 은 키리스 브리지로 돈다(`NEXUS_LLM_PROVIDER=claude-code`).
   유료 백엔드로 측정해야 하면 먼저 말하고 허락을 받는다.
