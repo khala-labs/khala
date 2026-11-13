@@ -12,7 +12,6 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
@@ -97,8 +96,7 @@ def test_the_param_number_is_the_callers_to_choose():
 
 # ── 와이어링: 라이브 코퍼스에서 실제로 빠지는가 ───────────────────────────────────
 
-pytestmark_db = pytest.mark.skipif(
-    not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark_db = pytest.mark.db
 
 _TENANT = "doc_type_filter_test"
 

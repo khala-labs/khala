@@ -11,7 +11,6 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
@@ -19,7 +18,7 @@ from nexus.index.anchors import AMBIGUOUS_NOW, CHANGED, FRESH, ORPHANED
 from nexus.search.anchor_status import statuses_for_chunks
 
 pytestmark = [
-    pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요"),
+    pytest.mark.db,
 ]
 
 _TENANT = "anchor_status_test"

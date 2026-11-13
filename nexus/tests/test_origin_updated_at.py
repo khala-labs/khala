@@ -14,7 +14,6 @@
 
 from __future__ import annotations
 
-import os
 from datetime import date, datetime, timezone
 from pathlib import Path
 
@@ -138,8 +137,7 @@ def test_none_means_unknown_not_new():
 
 # ── 와이어링: 값이 실제로 행에 앉는가 ────────────────────────────────────────────
 
-pytestmark_db = pytest.mark.skipif(
-    not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark_db = pytest.mark.db
 
 _TENANT = "origin_updated_at_test"
 

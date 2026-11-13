@@ -26,8 +26,7 @@ sys.path.insert(0, str(ROOT))
 
 from nexus.index import provenance as P  # noqa: E402
 
-pytestmark = pytest.mark.skipif(
-    not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요 — 쓰기 경로를 태운다")
+pytestmark = pytest.mark.db
 
 _RID = "chunk_provtest0001"
 

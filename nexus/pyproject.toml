@@ -106,5 +106,6 @@ asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
 markers = [
-    "integration: 실제 DB 연결이 필요한 통합 테스트 (NEXUS_TEST_DB_URL 필요)",
+    "integration: 실제 DB 연결이 필요한 통합 테스트 (NEXUS_TEST_DB_URL 필요). 테스트 전에 표를 TRUNCATE 한다",
+    "db: 실제 DB 가 필요하지만 표를 비우지 않는 테스트 (NEXUS_TEST_DB_URL 필요). 데이터는 테스트가 직접 관리한다",
 ]

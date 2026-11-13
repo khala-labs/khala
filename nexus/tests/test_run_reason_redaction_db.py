@@ -10,11 +10,10 @@ SPEC-nexus-notion-connection-health §4.6.
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
-pytestmark = pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 _TENANT = "acme"
 _TOKEN = "ntn_secret_value_do_not_leak_0000000000"

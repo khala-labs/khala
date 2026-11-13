@@ -16,15 +16,13 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
 from nexus.rid import doc_rid
 from nexus.search import doc_debt
 
-pytestmark = pytest.mark.skipif(
-    not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 _TENANT = "supersede_filter_test"
 #: 답변에도 목록에도 **절대** 나오면 안 되는 문자열.

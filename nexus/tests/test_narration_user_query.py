@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import inspect
-import os
 import sys
 from pathlib import Path
 
@@ -259,8 +258,7 @@ def _turns(n: int = 2) -> list[dict]:
     return [{"role": "user" if i % 2 == 0 else "assistant", "content": "앞 턴"} for i in range(n)]
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요 — 답변 경로를 끝까지 태워야 한다")
+@pytest.mark.db
 def test_the_answerer_gets_the_users_sentence_exactly_as_it_arrived(client, monkeypatch):
     """§4 I3. 문자열 **동일**이다 — 비슷한 것도, 다듬은 것도 아니다."""
     seen: dict = {}
@@ -275,8 +273,7 @@ def test_the_answerer_gets_the_users_sentence_exactly_as_it_arrived(client, monk
         "답변자가 받은 사용자 문장이 요청 본문의 값과 다르다 — I3 는 문자열 동일이다")
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_search_receives_exactly_what_it_received_before(client, monkeypatch):
     """§4 I5. 시그니처가 아니라 **값**이다. U2 가 검색에 한 글자도 닿으면 안 된다."""
     seen: dict = {}
@@ -291,8 +288,7 @@ def test_search_receives_exactly_what_it_received_before(client, monkeypatch):
     assert "user_query" not in seen["search"], "U2 의 값이 검색으로 샜다"
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_without_history_the_answerer_sees_no_second_sentence(client, monkeypatch):
     """§4 I1 을 API 표면에서. 이력이 없으면 재작성도 없고, 따로 줄 원문도 없다."""
     seen: dict = {}
@@ -305,8 +301,7 @@ def test_without_history_the_answerer_sees_no_second_sentence(client, monkeypatc
     assert seen["answer"].get("user_query") in (None, "레플리카 수")
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_the_streaming_surface_is_wired_the_same_way(client, monkeypatch):
     """웹이 쓰는 것은 이 경로다. 비스트림만 고치면 사람이 보는 API 표면은 그대로 무시한다 —
     이 리포가 반복한 '사본이 정본 회귀 검사 밖' 이다."""

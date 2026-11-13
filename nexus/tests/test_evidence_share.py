@@ -12,7 +12,6 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
@@ -91,8 +90,7 @@ def test_a_big_enough_sample_gets_percentages():
 
 # ── 와이어링: 패킷에서 세는가, 그리고 행이 앉는가 ────────────────────────────────
 
-pytestmark_db = pytest.mark.skipif(
-    not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark_db = pytest.mark.db
 
 _TENANT = "evidence_share_test"
 _OTHER = "evidence_share_test_other"

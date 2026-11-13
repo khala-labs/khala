@@ -38,7 +38,7 @@ def test_the_flag_is_declared_and_used():
     assert "BM25_LENGTH_NORMALIZATION" in body
 
 
-@pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_normalisation_shifts_score_toward_the_short_exact_row():
     """행동으로 확인한다 — 정규화가 **짧은 청크 쪽으로 점수 비율을 옮긴다.**
 

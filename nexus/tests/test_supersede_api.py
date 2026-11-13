@@ -22,7 +22,7 @@ from nexus.auth.principal import Principal
 from nexus.rid import chunk_rid, doc_rid
 
 DB_URL = os.getenv("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 필요 (docker-compose.test.yml)")
+pytestmark = pytest.mark.db
 
 _TENANT = "acme"
 _OTHER_TENANT = "rival"  # principal 은 acme — 이 테넌트 문서는 절대 손대면 안 된다

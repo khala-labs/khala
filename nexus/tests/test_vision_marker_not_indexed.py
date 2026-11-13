@@ -10,7 +10,6 @@
 
 from __future__ import annotations
 
-import os
 from types import SimpleNamespace
 
 import pytest
@@ -72,7 +71,7 @@ def test_stripping_is_idempotent_and_safe_on_empty():
 # 한쪽으로, trigram fallback 은 다른 쪽으로 돌고, 갈라졌다는 사실은 조용하다. 소스 문자열을
 # 비교하는 검사로는 못 잡는다 — 같은 입력을 양쪽에 넣어 **결과를 비교**한다.
 
-pytestmark_db = pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark_db = pytest.mark.db
 
 
 @pytestmark_db

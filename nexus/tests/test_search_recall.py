@@ -13,7 +13,6 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
@@ -28,7 +27,7 @@ def _has_mecab() -> bool:
 # 내려앉고, 그건 프로덕션이 쓰는 토크나이저가 아니다 — 다른 평가 하네스로 측정한 숫자는 하한값이 아니다.
 # mecab 은 Dockerfile 에서 소스 빌드된다. 그래서 CI 는 이 파일을 **이미지 안에서** 돌린다.
 pytestmark = [
-    pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요"),
+    pytest.mark.db,
     pytest.mark.skipif(not _has_mecab(), reason="mecab-ko 없음 — 프로덕션 토크나이저가 아니면 측정하지 않는다"),
 ]
 

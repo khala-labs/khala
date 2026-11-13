@@ -15,7 +15,6 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
@@ -32,7 +31,7 @@ from nexus.index.reembed import (
 )
 
 pytestmark = [
-    pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요"),
+    pytest.mark.db,
 ]
 
 

@@ -9,11 +9,10 @@ Notion 페이지 이름을 제대로 읽도록 고치고 `--force` 로 재동기
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
-pytestmark = pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 _TENANT = "reingest"
 

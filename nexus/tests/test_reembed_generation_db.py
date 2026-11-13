@@ -10,11 +10,10 @@ nomic-embed-text` 는 차원이 맞으므로 옛 가드 검사를 통과하고, 
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
-pytestmark = pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 _T = "reembed_gen"
 

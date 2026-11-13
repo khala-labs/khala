@@ -8,14 +8,13 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
 from nexus.index.embed import index_chunk_embedding, index_chunks_embedding
 
 pytestmark = [
-    pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요"),
+    pytest.mark.db,
 ]
 
 _TENANT = "write_path_test"

@@ -26,7 +26,6 @@
 from __future__ import annotations
 
 import json
-import os
 import sys
 from pathlib import Path
 
@@ -115,8 +114,7 @@ def _stream(client, captured: dict) -> dict:
 
 # ── 하나 — 계약이 붙는다 ──────────────────────────────────────────────────────
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요 — 답변 경로를 끝까지 태워야 한다")
+@pytest.mark.db
 def test_the_streaming_surface_actually_gets_the_weak_evidence_rule(client, monkeypatch):
     """⛔ **이것이 빠져 있던 동안 웹 채팅은 계약 밖이었다.**
 
@@ -130,8 +128,7 @@ def test_the_streaming_surface_actually_gets_the_weak_evidence_rule(client, monk
         "스트림 답변자가 적합도 규칙을 못 받았다 — 기본 인자가 「약하지 않다」로 떨어졌다"
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_a_search_that_matched_well_gets_no_such_rule(client, monkeypatch):
     """⛔ **대조군이 없으면 「늘 붙인다」도 초록이다.**
 
@@ -146,8 +143,7 @@ def test_a_search_that_matched_well_gets_no_such_rule(client, monkeypatch):
 
 # ── 둘 — 판정과 답변 근거가 **같이** 나간다 ────────────────────────────────────────
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_the_streaming_done_event_carries_the_verdict_and_its_basis(client, monkeypatch):
     """이 표면에는 판정 자체가 없었다 — 짧은 답을 받으면서 왜 짧은지 알 길이 없었다."""
     captured = _wire(monkeypatch, _WEAK)
@@ -158,8 +154,7 @@ def test_the_streaming_done_event_carries_the_verdict_and_its_basis(client, monk
     assert done.get("top_bm25") == pytest.approx(0.4)
 
 
-@pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"),
-                    reason="NEXUS_TEST_DB_URL 필요")
+@pytest.mark.db
 def test_the_non_streaming_surface_ships_the_basis_too(client, monkeypatch):
     """⛔ **한 API 표면만 고치면 그 API 표면의 소비자만 조용히 못 본다** — 이 파일의 주제다."""
     _wire(monkeypatch, _WEAK)

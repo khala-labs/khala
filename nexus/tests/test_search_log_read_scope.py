@@ -10,13 +10,12 @@
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
 from nexus.search.signals import SearchSignals, extract_signals
 
-pytestmark = pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark = pytest.mark.db
 
 
 def _sig(**kw) -> SearchSignals:

@@ -29,8 +29,7 @@ sys.path.insert(0, str(ROOT))
 
 from nexus.feedback import store as F  # noqa: E402
 
-pytestmark = pytest.mark.skipif(
-    not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요 — 저장 경로를 태운다")
+pytestmark = pytest.mark.db
 
 _T = "fb_test"
 _CH, _TS = "C123", "1700000000.000100"

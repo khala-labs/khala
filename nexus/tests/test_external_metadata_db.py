@@ -19,7 +19,7 @@ import sys
 import pytest
 
 DB_URL = os.getenv("NEXUS_TEST_DB_URL")
-pytestmark = pytest.mark.skipif(not DB_URL, reason="NEXUS_TEST_DB_URL 필요 (docker-compose.test.yml)")
+pytestmark = pytest.mark.db
 
 _TENANT = "acme"
 _RID = "doc_extmeta0001"

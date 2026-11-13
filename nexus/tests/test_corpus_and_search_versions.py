@@ -20,7 +20,6 @@ khala 가 아는 둘이 응답에 없었다:
 
 from __future__ import annotations
 
-import os
 
 import pytest
 
@@ -119,7 +118,7 @@ async def test_without_a_database_the_corpus_version_says_it_does_not_know():
 
 # ── 코퍼스 버전은 **읽을 수 있는 것만** 센다 (DB) ─────────────────────────────────
 
-pytestmark_db = pytest.mark.skipif(not os.getenv("NEXUS_TEST_DB_URL"), reason="NEXUS_TEST_DB_URL 필요")
+pytestmark_db = pytest.mark.db
 
 _T1, _T2, _OTHER = "corpus_version_t1", "corpus_version_t2", "corpus_version_other"
 
