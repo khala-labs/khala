@@ -6,12 +6,13 @@
 |---|---|---|---|---|
 | SPEC-specledger-a2a-publish-phase3 | Phase 3 — specledger publish to Nexus as an A2A task |  | 2026-06-18 | ADR-0001 |
 
-## 🟡 검토중 (2)
+## 🟡 검토중 (3)
 
 | id | title | approved_by | date | linked_adrs |
 |---|---|---|---|---|
 | SPEC-nexus-code-semantic-cards | Generate a natural-language card from code and prove the generator repeats itself — matching is a later SPEC |  |  | ADR-0008 |
 | SPEC-nexus-doc-code-anchors | A document that describes code should hold a typed reference into it, so "is this doc stale" is a join and not a judgement |  |  | ADR-0008 |
+| SPEC-nexus-improvement-loop | Improvement loop — a production question becomes a label, a change becomes a version, and the two halves are compared by version |  | 2026-11-02T16:01:49Z | ADR-0002, ADR-0003, ADR-0004, ADR-0006 |
 
 ## 🟢 승인 (65)
 
