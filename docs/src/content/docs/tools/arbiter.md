@@ -123,17 +123,18 @@ Add to `.arbiter/config.yaml`:
 
 ```yaml
 nexus:
-  url: "https://your-nexus-instance/ingest"
+  url: "https://your-nexus-instance"   # Nexus base URL (A2A card is discovered under it)
+  token: "<write-capability token>"     # or set ARBITER_NEXUS_TOKEN
 ```
 
 Then call `publish`. Without this config it returns `{"published": false, "reason": "nexus not configured"}`.
 
 ## Reference
 
-- Source: [`arbiter/` in the Khala monorepo](https://github.com/khala-labs/arbiter) (`README.md`; roadmap in `BACKLOG.md`).
-- Ten MCP tools: `record`, `critique`, `approve`, `status`, `supersede`, `begin_implementation`, `end_implementation`, `check_gate`, `index`, `publish`.
+- Source: [khala-labs/arbiter](https://github.com/khala-labs/arbiter) (`README.md`; roadmap in `BACKLOG.md`).
+- Twelve MCP tools: `record`, `critique`, `approve`, `status`, `supersede`, `begin_implementation`, `end_implementation`, `check_gate`, `index`, `publish`, `promote_external`, `guide`.
 - MVP boundaries: the `Bash` tool is *not* gated (only `Write`/`Edit`/`MultiEdit`); single-approver flow; no database.
 
 :::note[Last verified]
-Source repo README (site re-run verification pending).
+2026-11-14 — MCP tool list and the publish config checked against `src/khala/arbiter/server.py` and `README.md` at `3e6e6ac`, the commit this repository's CI installs.
 :::

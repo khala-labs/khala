@@ -63,7 +63,7 @@
 
 | 말 | 원어 | 주의 |
 |---|---|---|
-| 원장 | ledger | 회계 표준어다(元帳). `probe-ledger.yaml` 처럼 판정을 쌓는 것이나 지출 기록에는 맞다. ⛔ **단순 로그 파일을 원장이라 부르지 마라** — 2026-08-27 에 계수 기록 파일을 그렇게 불러 "질문 이력 저장소" 로 오해를 샀다. 그건 "기록 파일" 이다 |
+| 원장 | ledger | 회계 표준어다(元帳). `records/specs/retractions.yaml`(철회 원장)처럼 판정을 쌓는 것이나 지출 기록에는 맞다. ⛔ **단순 로그 파일을 원장이라 부르지 마라** — 2026-08-27 에 계수 기록 파일을 그렇게 불러 "질문 이력 저장소" 로 오해를 샀다. 그건 "기록 파일" 이다 |
 | 우회 | bypass | 일상어이고 원어도 같은 뜻이다. 다만 무엇을 우회했는지 같은 문장에 적어라 |
 | 배선 | wiring | 일상어이고 원어도 같은 뜻이다. "연결이 안 돼 있었다" 로 풀어 쓰면 더 좋을 때가 많다 |
 | 정본 | authoritative source · system of record | 여기서는 「어느 세부에 대해 소유자가 정한, 권위 있는 출처」다. ⚠ 법률의 정본(효력이 부여된 사본)과 기록관리의 진본성(만든 뒤 변조되지 않음)과 뜻이 다르다 — 「어느 값이 맞는가」의 뜻으로 쓴다는 것을 첫 등장에서 밝혀라. 2026-09-25 조사에서 국내 자료의 「정본」은 전부 법률 뜻이었다(`records/research/2026-09-25-canonical-link-feature-map-prior-art.md`) |
@@ -80,7 +80,7 @@
 | 계측기 | instrument | 측정 분야의 실제 한국어 |
 | 출처 · 근거 · 인용 · 승인 · 등급 | provenance / evidence / citation / approval / clearance | 전부 이미 쓰이는 한국어 |
 | 토큰 · 청크 · 코퍼스 · 임베딩 · 테넌트 · 게이트 | — | 규칙 1. 기계가 다루는 것 |
-| Khala · Nexus · Archon · Arbiter · Adept · Probe · Observer | — | 컴포넌트 고유명사. 개명하지 않는다(`CONVENTIONS.md` §Terminology) |
+| Khala · Nexus · Archon · Arbiter · Adept · Probe · Observer | — | 컴포넌트 고유명사. 개명하지 않는다(`CONVENTIONS.md` §Terminology). Adept, Probe, Observer는 ADR-0011에 의해 은퇴했으며, 기록을 위해 이름이 남아 있다. |
 
 ## 아직 안 정한 말
 

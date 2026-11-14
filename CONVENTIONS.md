@@ -1,6 +1,6 @@
 # Conventions
 
-Shared conventions for the Khala monorepo. Per-tool rules (language style, lint
+Shared conventions for the Khala repository. Per-tool rules (language style, lint
 config) live in each tool's own `CLAUDE.md` / docs; this file covers what applies
 across the ecosystem.
 
@@ -16,8 +16,7 @@ ecosystem. When in doubt: Khala is the alliance, Nexus is a member.
 
 ### Which language a term is written in
 
-`GLOSSARY.md` is the record of what each thing is called and why. It is also what
-`scripts/check_terms.py` reads — there is no second list. Three rules decide new terms:
+`GLOSSARY.md` is the record of what each thing is called and why, and its retired-terms table is the only list `scripts/check_terms.py` and the `Stop` hook (`scripts/hooks/terms_guard.py`) read. The table in the root `CLAUDE.md` is a summary copy for agents that neither check reads; when a row is added to `GLOSSARY.md`, that copy is updated too. Three rules decide new terms:
 
 1. **Things the machine handles keep their original name.** `embedding`, `chunk`,
    `corpus`, `tenant`, `RRF`, `Recall@10`. The repo already does this: 토큰 228 uses,
@@ -39,8 +38,7 @@ The invented five were all born the same way: the concept belonged to rule 2, no
 word existed, and one got made up. Inventing a word feels like precision and reads as
 jargon to everyone else.
 
-Records keep the words of their time: approved SPECs, ADRs, the public engineering log,
-and dated measurement reports are not rewritten. This is the same rule the component
+Records keep the words of their time: approved SPECs, ADRs, and dated measurement reports are not rewritten. The public engineering log is not one of them; `GLOSSARY.md` explains why. This is the same rule the component
 rename followed.
 
 The rules cover code comments, docstrings and user-facing strings as well as prose —
@@ -54,18 +52,14 @@ is stamped. `GLOSSARY.md` lists what is frozen and why.
 
 ## Naming
 
-- **A lowercase top-level directory is a tool.** `nexus/`, `docs/`.
-  The directory name is the tool's canonical
-  name. Adding a tool means adding a lowercase directory and a row in the
-  README tool map. (Exception: shared non-tool directories such as `assets/`
-  are also lowercase but are not tools and do not get a README entry.)
+- **A lowercase top-level directory is a tool.** Today the only tool directory is `nexus/`. The directory name is the tool's canonical name. Adding a tool means adding a lowercase directory and a row in the README tool map. Exception: shared non-tool directories `docs/` (the docs site), `records/`, `scripts/`, `tests/` and `assets/` are also lowercase but are not tools and get no README entry.
 - Within a tool, follow that tool's own file-naming convention (e.g. Nexus
   uses Python module conventions).
 
 ## Versioning
 
 - **Each tool is versioned independently** with its own semantic version
-  (`MAJOR.MINOR.PATCH`). There is no single monorepo version.
+  (`MAJOR.MINOR.PATCH`). There is no single repository version.
 - **Each tool keeps its own `CHANGELOG.md`** at the root of its directory (e.g.
   `nexus/CHANGELOG.md`). Record breaking changes, features, and fixes per tool —
   do not maintain a shared changelog.
@@ -157,4 +151,4 @@ is worse than a broken hash**, which is why the pointer is enforced rather than 
 ## License
 
 The repository is MIT licensed (see [LICENSE](./LICENSE)). The root license
-covers every tool in the monorepo.
+covers every tool in this repository.
