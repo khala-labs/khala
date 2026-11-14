@@ -43,7 +43,9 @@ Khala는 서비스를 개발하고 운영하는 모든 주체(사람과 에이�
 | 정보 계층 | 단일 진실을 보장하는 메커니즘 | 핵심 도구 |
 |---|---|---|
 | **조직의 공인 지식**<br/>(문서, 사양, 개발 노하우) | **단일 공유 계층, 이중 접근 인터페이스**: 인간(Web UI)과 에이전트(MCP/A2A)가 동일한 통제 코퍼스를 읽으며, 모든 답변에 검증된 출처 인용이 강제됩니다. | [Nexus](./nexus) |
-| **설계 의도 및 의사결정**<br/>(아키텍처 결정 이력) | **아키텍처 결정 레코더**: 에이전트가 내리는 대규모 설계 결정을 무비용으로 기록하고, 코드 작성 전 공인된 엔지니어의 명시적 승인을 거치도록 게이트를 둡니다. | [Arbiter](./arbiter) |
+| **설계 의도 및 의사결정**<br/>(아키텍처 결정 이력) | **아키텍처 결정 레코더**: 에이전트가 내리는 대규모 설계 결정을 무비용으로 기록하고, 코드 작성 전 공인된 엔지니어의 명시적 승인을 거치도록 게이트를 둡니다. 승인된 사양은 A2A를 통해 선택적으로 Nexus에 발행할 수 있습니다. | [Arbiter](https://github.com/khala-labs/arbiter) |
+| **런타임 운영 상태**<br/>(트레이스, 메트릭) | Nexus가 OpenTelemetry 트레이스를 관측된 호출 엣지(`CALLS_OBSERVED`)로 집계하고, 설계 문서와 관측된 호출이 다른 부분(`doc_only`, `observed_only`, `conflict`)을 보고합니다. OTel 파이프라인은 옵트인입니다. | [Nexus](./nexus) |
+| **시스템을 여전히 이해하고 있는 사람**<br/>(인지 부채) | 어떤 도구도 이를 측정하지 않습니다. 이를 위해 만들어졌던 도구(Adept)는 아카이브되었으며, ADR-0011에 따라 이 상태를 오픈으로 유지합니다. | 없음 (오픈, ADR-0011) |
 
 ---
 
@@ -65,7 +67,7 @@ AI가 소프트웨어의 주된 생산자가 되면서 세 가지 부채가 누�
 
 | 도구 | 역할 | 상태 (일자) | 디렉터리 링크 |
 | --- | --- | --- | --- |
-| **Nexus** | 문서와 텔레메트리를 아우르는 하이브리드 검색 엔진 (BM25 + pgvector + RRF). 모든 응답에 코드 레벨의 인용 검증 결속.<br>- **Archon** (별도 도구가 아닌 Nexus 내장 모듈): 도메인 불변 상수에 대한 권위 창(Authoritative Window). 질의 시점에 소스 코드 상수에서 최신 진실값을 판독. | 코드 개발 중, 배포 없음(2026-11-11 기준, 마지막 데이터는 2026-11-10 DB 덤프); 마지막 코드 변경 2026-11-10 | [`./nexus`](./nexus)<br>(Archon: [`./nexus/nexus/claims`](./nexus/nexus/claims)) |
+| **Nexus** | 문서와 텔레메트리를 아우르는 하이브리드 검색 엔진 (BM25 + pgvector + RRF). 모든 응답의 인용을 코드에서 검증.<br>- **Archon** (별도 도구가 아닌 Nexus 내장 모듈): 도메인 불변 상수에 대한 권위 창(Authoritative Window). 질의 시점에 소스 코드 상수에서 최신 진실값을 판독. | 코드 개발 중, 배포 없음(2026-11-11 기준, 마지막 데이터는 2026-11-10 DB 덤프); 마지막 코드 변경 2026-11-10 | [`./nexus`](./nexus)<br>(Archon: [`./nexus/nexus/claims`](./nexus/nexus/claims)) |
 
 ### 쓰고 있는 계측 도구
 
@@ -107,9 +109,9 @@ task up        # 또는: cd nexus && docker compose up -d
 task models    # 또는: docker compose -f nexus/docker-compose.yml exec nexus-ollama ollama pull nomic-embed-text
 ```
 
-> **💡 개발용 키리스 브리지:** 유료 API 키 없이도 로컬에서 답변 생성을 테스트할 수 있습니다. `nexus/.env`에 `NEXUS_LLM_PROVIDER=claude-code`를 설정하고 `task llm-bridge`를 실행하면 호스트의 Claude Code 세션을 질의응답 백엔드로 연동합니다.
+> **💡 개발용 키리스 브리지:** 유료 API 키 없이 로컬에서 답변 생성을 테스트할 수 있습니다. `nexus/.env`에 `NEXUS_DEV_LLM_PROVIDER=claude-code`를 설정하고 `task llm-bridge`를 실행하면 로컬 개발 주체(`local-dev`)의 답변이 호스트의 Claude Code 세션을 거칩니다. `NEXUS_LLM_PROVIDER`는 기본값인 `anthropic`으로 두어야 하며 소유자 외의 다른 주체가 존재하는 상태에서 `claude-code`로 설정되면 시작이 거부되고, 브리지에 필요한 `NEXUS_LLM_BRIDGE_TOKEN`을 비롯한 전체 설정은 `nexus/.env.example`에 있습니다.
 
-브라우저에서 **http://localhost:8000**에 접속하면 답변 근거 패킷과 출처가 결속된 검색 콘솔을 사용할 수 있습니다:
+브라우저에서 **http://localhost:8000**에 접속하면 근거 묶음과 출처가 함께 표시되는 검색 콘솔을 사용할 수 있습니다:
 - **문서 색인(Ingestion):** 웹 콘솔 내 업로드 또는 CLI 실행: `docker compose exec nexus-app nexus ingest ./docs`
 - **DB 스키마 마이그레이션:** `task update` 실행 ([nexus/migrations](nexus/migrations/README.md) 참조)
 - **스택 종료:** `task down`

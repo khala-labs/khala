@@ -18,17 +18,11 @@
 
 ---
 
-Khala answers the **two failure modes of the AI era — confident hallucination, and the
-human stops judging** — with deterministic grounding, not advice. Khala is not a
-tool you run; it is the link the tools share. The ecosystem is **Khala**; one of
-its components is **Nexus**.
+AI coding agents raised development speed, and engineering organizations now face three problems. Khala answers these with deterministic grounding and pre-approval governance gates, not advice. Khala is not a tool you run; it is the link the tools share. The ecosystem is **Khala**; one of its components is **Nexus**.
 
-- **confident hallucination** — stale or wrong, asserted with confidence. Defended by
-  grounding answers in verifiable sources — and by mechanical checks, not trust:
-  every citation is verified against the retrieved evidence, answer numbers must
-  appear in that evidence, and answers built on stale sources are flagged.
-- **rubber-stamping** — AI output rubber-stamped without reading.
-  Defended by making accountable review a gate before code is written.
+- **confident hallucination** — models write false answers and fragile code with high confidence from expired documents or wrong assumptions. Defended by grounding answers in verifiable sources and by mechanical checks: every citation is verified against the retrieved evidence, answer numbers must appear in that evidence, and answers built on stale sources are flagged.
+- **rubber-stamping** — engineers approve the large volume of agent code after only seeing tests pass, without understanding it. Defended by making accountable review a gate before code is written (Arbiter).
+- **cognitive debt explosion** — the system grows fast while fewer people on the team can explain how it works and why decisions were made. No tool measures it today (ADR-0011).
 
 ## One substrate, four kinds of information
 
@@ -46,11 +40,9 @@ information drift apart in an AI-era org, and each one is a Khala surface:
 | Information | How it stays *the same* for everyone | Tool |
 |---|---|---|
 | **What the org knows** — docs, specs, know-how | Single governed substrate, dual access interfaces: humans (web) and agents (MCP/A2A) read the same governed corpus — same approvals, same current version, same citations. | [Nexus](./nexus) |
-| **Why it was built** — design decisions | Architecture decision recorder: choices coding agents make by the hundred are recorded at zero marginal cost, and approval stays a named human's accountable act. | [Arbiter](./arbiter) |
-
-The first row is where a team starts — everyday value. The last row is why it matters
-more every year: as agent output grows, an org that doesn't measure comprehension
-doesn't even know what it no longer knows.
+| **Why it was built** — design decisions | Architecture decision recorder: choices coding agents make by the hundred are recorded at zero marginal cost, and approval stays a named human's accountable act. | [Arbiter](https://github.com/khala-labs/arbiter) |
+| **Runtime operational state** (traces, metrics) | Nexus aggregates OpenTelemetry traces into observed call edges (`CALLS_OBSERVED`) and reports where design documents and observed calls differ (`doc_only`, `observed_only`, `conflict`). The OTel pipeline is opt-in. | [Nexus](./nexus) |
+| **Who still understands the system** (cognitive debt) | No tool measures it. The tool that was built for it (Adept) was archived; ADR-0011 keeps this open. | None (open, ADR-0011) |
 
 ## The three debts of the AI era
 
@@ -103,7 +95,7 @@ task up        # Or: cd nexus && docker compose up -d
 task models    # Pull embedding model (docker compose exec nexus-ollama ollama pull nomic-embed-text)
 ```
 
-> **Keyless dev mode:** You can run LLM answers without paid API keys. Set `NEXUS_LLM_PROVIDER=claude-code` and run `task llm-bridge` to route requests to the host Claude Code process.
+> **Keyless dev mode:** Answer generation can be tested locally without a paid API key. Set `NEXUS_DEV_LLM_PROVIDER=claude-code` in `nexus/.env` and run `task llm-bridge` so answers for the local development principal (`local-dev`) go through the host's Claude Code session, leaving `NEXUS_LLM_PROVIDER` at its default `anthropic`. Startup is refused if `NEXUS_LLM_PROVIDER` is set to `claude-code` while any principal other than the owner exists; the bridge also needs `NEXUS_LLM_BRIDGE_TOKEN`, and the full setup is in `nexus/.env.example`.
 
 Open **http://localhost:8000** in your browser to query documentation with cited evidence.
 

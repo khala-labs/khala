@@ -67,7 +67,7 @@ Then set `code_source.repo_path` in `nexus/config.yaml` to the codebase whose co
 nexus claim-seed claims.yaml
 ```
 
-(Note: the top-level `claims.yaml` shipped in the repo is a seed example, not the package.)
+(Note: `nexus/claims.yaml` shipped in the repo is a seed example, not the package.)
 
 ### 3. Ask for a current value
 
@@ -107,8 +107,8 @@ Archon exposes MCP tools so agents answer domain questions from the governed sou
 ## Reference
 
 - Repo: [github.com/khala-labs/khala](https://github.com/khala-labs/khala), branch `master`.
-- Package: `nexus/claims/` (`seed.py`, `value_query.py`, `grade_authority.py`, `answer.py`, `repository.py`). CLI in `nexus/cli.py`; HTTP in `nexus/api.py`; MCP tools in `nexus/mcp/server.py`.
+- Package: `nexus/claims/` (`seed.py`, `value_query.py`, `grade_authority.py`, `answer.py`, `matching.py`, `repository.py`). CLI in `nexus/cli.py`; HTTP in `nexus/api.py`; MCP tools in `nexus/mcp/server.py`.
 
 :::note[Last verified]
-2026-07-10 — commands and MCP tool names checked against `nexus/cli.py` and `nexus/mcp/server.py` on `master`.
+2026-11-14 — commands, HTTP routes and MCP tool signatures checked against `nexus/cli.py`, `nexus/api.py` and `nexus/mcp/server.py` on `master`.
 :::

@@ -3,6 +3,11 @@ title: Engineering log
 description: A dated record of what this system got wrong, how each defect surfaced, and what changed because of it.
 ---
 
+:::note[Coverage]
+Entries stop at 2026-09-07. As of 2026-11-14, later changes are recorded in `records/` and the git history but not yet in this log. Examples: on 2026-11-08 Arbiter moved to its own repository and Observer, Probe and Adept were archived (ADR-0011); ADR-0012 reversed the sufficiency signal.
+:::
+
+
 *Most project histories list what was shipped. This one lists what was **wrong** — because in a system whose whole promise is calibration, the interesting events are the ones where the system, or its measurements, turned out to be lying.*
 
 This page is safe to hand-write, which most of the documentation here is not. Everything else in this repository describes the code as it is now, so it rots the moment the code moves — which is why those pages are [anchored to the sources they describe](https://github.com/khala-labs/khala/blob/master/doc-anchors.yml) and checked on every push. A dated record is different. It says what was true on a day, and days do not change.

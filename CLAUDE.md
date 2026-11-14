@@ -27,6 +27,8 @@ docker exec nexus-app python -m nexus.cli query "질문" --tenant design_docs --
 | `default` | 제품 정책 문서 · khala 자기 문서 | 문서 126 · 청크 466 |
 | `design_docs` | 팀 설계 문서 · PR 구현 계획 · ADR · 리팩터링 플랜 | 문서 121 · **청크 1519** |
 
+표의 크기는 2026-08-26에 측정되었으며 2026-11-14 기준 다시 측정되지 않았다(현재 수치 확인 필요).
+
 **왜 이 규칙이 있나 (2026-08-26 실측).** 이 문은 두 달간 **0회** 쓰였다. 에이전트가 거부해서가
 아니라 **부를 방법이 없었기 때문**이다 — 이 파일 자체가 없었고, `.mcp.json` 은 이름이 바뀌어
 사라진 모듈을 가리키고 있었고, 컨테이너에는 `mcp` 가 설치돼 있지 않았다. 그동안 에이전트는 같은
@@ -41,8 +43,7 @@ docker exec nexus-app python -m nexus.cli query "질문" --tenant design_docs --
 
 ## 이 리포에서 절대 하지 않는 것
 
-- **옛 컴포넌트 이름을 쓰지 않는다.** specledger → **Arbiter** · mutqa → **Probe** · ken →
-  **Adept** · 옛 Probe(리뷰) → **Observer**. 시점 기록물(ADR·런로그)의 잔존만 허용.
+- **옛 컴포넌트 이름을 쓰지 않는다.** specledger는 현재 **Arbiter**이며 자체 저장소 `khala-labs/arbiter`에서 사용 중이다. mutqa(**Probe**), ken(**Adept**), 이전 probe(**Observer**)는 ADR-0011에 의해 은퇴했고 해당 저장소들은 아카이브되었으므로 현재 도구로 작성하지 않는다. 옛 명칭의 잔재는 특정 시점의 기록(ADR, 실행 로그)에만 허용된다.
 - ⛔ **팀 제품 코드를 고치지 않는다.** `/code-src` 로 마운트된 코드는 **읽기 전용 근거**다.
   거기서 결함을 찾으면(예: 검증 상한이 컬럼보다 커서 저장이 깨지는 것) **찾아서 정확히
   전달하는 것까지가 내 몫**이고, 고치는 것은 개발진이다. 2026-08-31 지시.
@@ -50,7 +51,7 @@ docker exec nexus-app python -m nexus.cli query "질문" --tenant design_docs --
   커밋·PR 규칙은 조직 전체가 한 곳(`khala-labs/.github` 의 `CONTRIBUTING.md`)을 따른다 —
   `CONVENTIONS.md` §Commit messages and pull request descriptions 가 그곳을 가리킨다.
   `python scripts/fingerprint_scan.py` 가 `git add` 뒤에 검사한다.
-- **개발 실행에 돈을 쓰지 않는다.** LLM 은 키리스 브리지로 돈다(`NEXUS_LLM_PROVIDER=claude-code`).
+- **개발 실행에 돈을 쓰지 않는다.** LLM 은 키리스 브리지로 돈다(`NEXUS_DEV_LLM_PROVIDER=claude-code` — CLI 는 `-e NEXUS_LLM_PROVIDER=claude-code`).
   유료 백엔드로 측정해야 하면 먼저 말하고 허락을 받는다.
 - ⭐ **용어를 지어내지 않는다.** 한국어 번역을 **발명해야 할 것 같으면 원어를 써라.** 실측
   2026-08-27: 산문 230파일에 내가 뜻을 지어낸 말이 다섯 개 있었고(`자` 만 136회·21파일), 전부
@@ -59,7 +60,7 @@ docker exec nexus-app python -m nexus.cli query "질문" --tenant design_docs --
   **문서만이 아니라 보고·대화에도 적용된다.** 그리고 이제 그쪽에도 검사가 있다 —
   `Stop` 훅(`scripts/hooks/terms_guard.py`)이 그 턴의 응답 전문을 같은 판정에 통과시키고,
   걸리면 **한 번** 막으면서 대신 쓸 말을 되먹인다. 그 말 자체를 인용해야 하면 백틱으로
-  감싼다(이 표가 그렇게 돼 있다). 목록은 여기:
+  감싼다(이 표가 그렇게 돼 있다). 아래 표는 요약이며, 정본 목록은 `GLOSSARY.md`의 「걷어낸 말」 표이고 두 검사 모두 해당 파일만 읽는다:
 
   | 안 씀 | 씀 |
   |---|---|

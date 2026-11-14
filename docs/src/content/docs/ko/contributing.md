@@ -3,8 +3,8 @@ title: 기여 가이드
 description: Khala 오픈소스 생태계 기여 절차 및 컨벤션 안내.
 ---
 
-본 프로젝트와 관련 도구군은 오픈소스 엔지니어링 표준에 따라 공개적으로 개발 및 유지보수됩니다. 기여 작업은 [Khala 모노레포](https://github.com/khala-labs/khala)(`nexus/`, `docs/`)를 기반으로 수행되며, GitHub 이슈 트래커 및 풀 리퀘스트(PR)를 통해 진행됩니다. Arbiter는 자체 저장소([khala-labs/arbiter](https://github.com/khala-labs/arbiter))에서 관리됩니다.
+문서와 도구는 공개적으로 개발됩니다. 기여는 이슈와 풀 리퀘스트를 열 수 있는 [Khala 저장소](https://github.com/khala-labs/khala)(`nexus/`, `docs/`, `records/`)에서 진행되며, Arbiter는 자체 [저장소](https://github.com/khala-labs/arbiter)에 있습니다.
 
-생태계 공통 규약(아키텍처 불변식, 컴포넌트 네이밍, 도구별 독립 시맨틱 버저닝, Conventional Commits 규칙)은 [`CONVENTIONS.md`](https://github.com/khala-labs/khala/blob/master/CONVENTIONS.md) 및 표준 용어집 [`docs/glossary.md`](https://github.com/khala-labs/khala/blob/master/docs/glossary.md)에 정의되어 있습니다.
+용어, 명명 규칙, 도구별 버전 관리, 의존성을 다루는 저장소 규칙은 [CONVENTIONS.md](https://github.com/khala-labs/khala/blob/master/CONVENTIONS.md)에 있으며, 용어는 `GLOSSARY.md`와 `docs/glossary.md`에 정리되어 있습니다. 커밋 메시지와 풀 리퀘스트 설명은 조직 내 모든 저장소가 공유하는 단일 규칙인 [khala-labs/.github의 CONTRIBUTING.md](https://github.com/khala-labs/.github/blob/main/CONTRIBUTING.md)를 따릅니다.
 
-풀 리퀘스트 제출 전 로컬 환경에서 테스트 스위트 및 거버넌스 게이트(`check_readme_counts.py`, `check_terms.py`, `check_svg_fit.py`, `ledger_integrity.py` 등)의 통과를 확인해야 합니다.
+풀 리퀘스트를 열기 전에 로컬에서 테스트 스위트와 저장소 가드를 실행해야 합니다. `check_readme_counts.py`, `check_terms.py`, `check_svg_fit.py`, `ledger_integrity.py`를 실행하고 `git add` 후 `fingerprint_scan.py`를 실행하시기 바랍니다. 문서 사이트를 위한 공식 기여 절차는 추후 이곳에 작성될 예정이며, 그전까지는 관련 저장소에서 토론을 열어 주십시오.

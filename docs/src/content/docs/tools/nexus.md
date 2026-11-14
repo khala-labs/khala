@@ -156,7 +156,7 @@ docker compose exec -T nexus-app python -m scripts.migrate   # ← skip this and
 
 Starts PostgreSQL 16 + pgvector (5432), Ollama (11434), and the FastAPI app on **8000**. The OTel collector + Tempo are **opt-in** — add them only for trace aggregation: `docker compose --profile observability up -d`.
 
-### 4. Index documents & search
+### 3. Index documents & search
 
 Open `http://localhost:8000/` and ask in the chat — or use the CLI:
 
@@ -207,8 +207,8 @@ The same report is available at `GET /diff`.
 ## Reference
 
 - Source repo README: [github.com/khala-labs/khala](https://github.com/khala-labs/khala) (`README.md`)
-- API contract, pipeline, MCP server, Slack bot, and UI integration docs live under that repo's `docs/` (`API_CONTRACT.md`, `PIPELINE_SPEC.md`, `MCP_SERVER.md`, `SLACK_BOT.md`, `UI_INTEGRATION.md`).
-- MCP server exposes nine tools — `nexus_search`, `nexus_answer`, `nexus_graph`, `nexus_suggest`, `nexus_diff`, `nexus_status`, `nexus_supersede`, `archon_claim_value`, `archon_grade_authority` — via `python -m nexus.mcp`. Set `NEXUS_MCP_TOKEN`, or every call returns 401 (auth defaults to `enforced`).
+- API contract, pipeline, MCP server, Slack bot, and UI integration docs live under that repo's `nexus/docs/` (`API_CONTRACT.md`, `PIPELINE_SPEC.md`, `MCP_SERVER.md`, `SLACK_BOT.md`, `UI_INTEGRATION.md`).
+- MCP server exposes eighteen tools — `nexus_search`, `nexus_answer`, `nexus_graph`, `nexus_suggest`, `nexus_diff`, `nexus_status`, `nexus_supersede`, `nexus_unsupersede`, `nexus_sources_list`, `nexus_sources_add`, `nexus_sources_health`, `nexus_sources_sync`, `nexus_sync_status`, `nexus_documents_search`, `nexus_document_hide`, `nexus_document_restore`, `archon_claim_value`, `archon_grade_authority` — via `python -m nexus.mcp`. Set `NEXUS_MCP_TOKEN`, or every call returns 401 (auth defaults to `enforced`).
 
 :::note[Last verified]
 Source repo README (site re-run verification pending).

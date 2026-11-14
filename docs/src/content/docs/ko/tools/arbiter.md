@@ -43,4 +43,96 @@ Arbiter는 소프트웨어 아키텍처 의사결정의 책임성과 추적성�
 - **Nexus 지식 공유 계층 연동** — `publish` 명령을 통해 승인 완료된 사양 문서를 Nexus 저장소로 자동 동기화하며, 대상 미설정 시 무영향(no-op)으로 종료됩니다.
 - **결정론적 단일 실행 로직** — CLI(`arbiter record`, `status`, `critique`, `approve`, `check-gate`)와 MCP 서버가 동일한 코어 비즈니스 로직을 호출하므로, 실행 주체(개발자 또는 자율 에이전트)에 상관없이 동일한 거버넌스 판정 결과를 보장합니다.
 
-설치 및 상세 API 명세는 영문 참조 페이지([Arbiter](/tools/arbiter/))를 참고하십시오.
+## 빠른 시작
+
+Arbiter는 Python 패키지이며, MCP 서버 및 PreToolUse 훅으로 실행됩니다. 명령어는 소스 저장소 README에서 그대로 옮겨왔습니다.
+
+### 설치
+
+```bash
+pip install -e ".[dev]"
+```
+
+### MCP 서버 등록 (`.mcp.json`)
+
+```json
+{
+  "mcpServers": {
+    "arbiter": {
+      "command": "python",
+      "args": ["-m", "khala.arbiter.server"],
+      "env": {
+        "ARBITER_ROOT": "/abs/path/to/your/project",
+        "ARBITER_DOCS": "/abs/path/to/your/project/docs",
+        "ANTHROPIC_API_KEY": "sk-ant-..."
+      }
+    }
+  }
+}
+```
+
+`ARBITER_ROOT`는 `.arbiter/` 상태가 위치하는 프로젝트 루트입니다(기본값은 `.`). `ARBITER_DOCS`는 spec/ADR Markdown이 작성되는 위치입니다(기본값은 `$ARBITER_ROOT/docs`). `ANTHROPIC_API_KEY`는 내장된 `AnthropicCritic`에만 필요합니다.
+
+### PreToolUse 훅 등록 (`.claude/settings.json`)
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python /abs/path/arbiter/hooks/pretooluse_gate.py"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+해당 훅은 stdin에서 도구 페이로드를 읽고 `0`(허용) 또는 `2`(차단)로 종료합니다.
+
+## 사용 방법
+
+### 기록 → 비평 → 승인 → 구현
+
+README에서 그대로 옮겨온 최초 컨슈머 흐름입니다:
+
+```
+1. record                 → record("spec", "Playlist Self-Update")  → SPEC-playlist-self-update
+2. critique               → critique("SPEC-playlist-self-update")    → opens issues (e.g. I-001)
+3. fix + disposition      → human edits the body to address each issue
+4. approve                → approve(id, [{"issue_id":"I-001","disposition":"accepted"}], "reviewer")
+                             verifies body changed, stamps content hash, status=approved
+5. begin_implementation   → arms the gate; Write/Edit on src/ paths now allowed
+6. end_implementation     → disarms the gate when coding is complete
+```
+
+### 현재 경로 허용 여부 확인
+
+`check_gate`를 사용하여 경로 목록이 게이트를 통과하는지 조회하고, `status`로 상태를 보고하며 변조를 감지합니다. 편집 세션을 시작하기 전에 유용합니다.
+
+### 승인된 문서를 Nexus에 발행 (선택 사항)
+
+`.arbiter/config.yaml`에 다음을 추가합니다:
+
+```yaml
+nexus:
+  url: "https://your-nexus-instance"   # Nexus base URL (A2A card is discovered under it)
+  token: "<write-capability token>"     # or set ARBITER_NEXUS_TOKEN
+```
+
+그런 다음 `publish`를 호출합니다. 이 설정이 없으면 `{"published": false, "reason": "nexus not configured"}`를 반환합니다.
+
+## 참조
+
+- 소스: [khala-labs/arbiter](https://github.com/khala-labs/arbiter) (`README.md`, 로드맵은 `BACKLOG.md`).
+- 12개 MCP 도구: `record`, `critique`, `approve`, `status`, `supersede`, `begin_implementation`, `end_implementation`, `check_gate`, `index`, `publish`, `promote_external`, `guide`.
+- MVP 범위: `Bash` 도구는 게이트되지 *않으며*(`Write`/`Edit`/`MultiEdit`만 해당), 단일 승인자 흐름이고, 데이터베이스가 없습니다.
+
+:::note[마지막 검증]
+2026-11-14 — MCP 도구 목록 및 publish 설정을 이 저장소의 CI가 설치하는 커밋인 `3e6e6ac`의 `src/khala/arbiter/server.py` 및 `README.md`와 대조하여 확인했습니다.
+:::

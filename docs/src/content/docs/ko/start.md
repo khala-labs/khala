@@ -41,7 +41,7 @@ docker compose exec -T nexus-app python -m scripts.migrate   # 데이터베이�
 docker compose exec nexus-app nexus ingest ./docs
 ```
 
-브라우저에서 `http://localhost:8000/` 접속 후 질의를 수행하면 인용된 청크 식별자 및 답변 근거 패킷과 함께 응답이 제공됩니다.
+브라우저에서 `http://localhost:8000/` 접속 후 질의를 수행하면 인용된 청크 식별자 및 답변 근거 묶음과 함께 응답이 제공됩니다.
 
 - 서비스 중지: `task down` (또는 `docker compose down`)
 - 서비스 갱신: `git pull` 후 `task update` (재빌드 및 DB 마이그레이션 적용)

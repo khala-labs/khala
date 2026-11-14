@@ -3,8 +3,8 @@ title: Contributing
 description: For future collaborators and open-source contributors.
 ---
 
-These docs and the tools they describe are built in the open for future collaborators. For now, contribution happens in the [Khala monorepo](https://github.com/khala-labs/khala) (`nexus/`, `docs/`) — where you can open issues and pull requests — and Arbiter lives in its own repository ([khala-labs/arbiter](https://github.com/khala-labs/arbiter)).
+The docs and the tools are built in the open. Contribution happens in the [Khala repository](https://github.com/khala-labs/khala) (`nexus/`, `docs/`, `records/`), where you can open issues and pull requests; Arbiter lives in its own [repository](https://github.com/khala-labs/arbiter).
 
-Shared conventions across the ecosystem — terminology, naming, per-tool versioning, and the Conventional Commits format — live in [`CONVENTIONS.md`](https://github.com/khala-labs/khala/blob/master/CONVENTIONS.md).
+Repository conventions — terminology, naming, per-tool versioning, dependencies — are in [CONVENTIONS.md](https://github.com/khala-labs/khala/blob/master/CONVENTIONS.md); the terms are in `GLOSSARY.md` and `docs/glossary.md`. Commit messages and pull request descriptions follow one rule shared by every repository in the organization: [CONTRIBUTING.md in khala-labs/.github](https://github.com/khala-labs/.github/blob/main/CONTRIBUTING.md).
 
-A formal contribution flow and review guidelines for this docs site will expand here as the ecosystem matures. If you'd like to help in the meantime, open a discussion in the relevant repo.
+Before opening a pull request, run the test suite and the repository guards locally: `check_readme_counts.py`, `check_terms.py`, `check_svg_fit.py`, `ledger_integrity.py`, and `fingerprint_scan.py` after `git add`. A formal contribution flow for the docs site will be written here later; until then, open a discussion in the relevant repository.
