@@ -2,6 +2,11 @@
 
 *2026-09-20. 대상 코퍼스 `picasso`. 소비자 = 설명 레이어(`picasso-narrator`).*
 
+> **이후 바뀜 (2026-11-14 주석 — 본문은 2026-09-20 의 사전 등록 그대로 두고 고쳐 쓰지 않는다).**
+> 규칙 6 이 든 `evidence_fingerprint` 칸은 2026-11-10 migration 052 로 지워졌다(#10, ADR-0012). 지금은
+> `search_fingerprint`(`nexus/search/versions.py`)가 `config.yaml` 의 `search` 절 전체를 해시하므로,
+> 풀 값을 바꾸면 그 값이 바뀌어 기록이 갈라진다는 규칙 6 의 이유는 칸 이름만 바꿔 그대로 성립한다.
+
 ⛔ **이 문서는 측정 전에 쓰였다.** 실험군·결과 변수·판정 규칙을 결과를 보기 전에 박는 것이
 이 파일의 전부다. 이 리포는 같은 자리에서 두 번 구해졌다 — `BM25_POOL_PREREGISTRATION.md`
 (풀 상향)와 `MULTIHOP_ASSEMBLY_PREREGISTRATION.md`(섹션 필). 두 번 다 **좋아 보이는 값을

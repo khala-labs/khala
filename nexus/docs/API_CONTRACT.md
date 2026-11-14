@@ -14,11 +14,12 @@
 
 | 계열 | 대략의 경로 | 다루는 문서 |
 |---|---|---|
-| Notion 소스 콘솔 | `/roots` · `/sync` · `/preview` · `/sync/{run_id}` | — (콘솔 UI가 유일한 소비자) |
-| 문서 생명주기 | `/documents/{rid}` · `/hide` · `/restore` · `/supersede` · `/unsupersede` | — |
+| Notion 소스 콘솔 | `/sources/notion/` 아래 `roots` · `roots/{root_id}` · `health` · `corpus` · `preview` · `sync` · `sync/latest` · `sync/{run_id}` | — (콘솔 UI · MCP `nexus_sources_*`) |
+| 문서 생명주기 | `/documents/{rid}` · `/documents/{rid}/hide` · `/restore` · `/unsupersede` · `/supersede` | — (MCP `nexus_document_*` · `nexus_supersede` · `nexus_unsupersede`) |
 | 답변 피드백 | `/feedback/offer` · `/vote` · `/reason` | [SLACK_BOT.md](SLACK_BOT.md) |
 | 클레임·권위 | `/claims/value` · `/claims/grade-authority` | — (Archon 계열, 코드가 정본) |
-| 운영 | `/health` · `/corpus` · `/visibility` · `/auth/dev-token` | [TEAM_DOGFOOD_DEPLOY.md](TEAM_DOGFOOD_DEPLOY.md) |
+| 진단 | `/search/explain`(기대한 문서의 경로별 순위) | — |
+| 운영 | `/visibility` · `/auth/dev-token` (소스 진단은 위 `/sources/notion/health` · `corpus`) | [TEAM_DOGFOOD_DEPLOY.md](TEAM_DOGFOOD_DEPLOY.md) |
 
 > `/auth/dev-token`은 **의도적으로 비-게이트**다(토큰을 받기 전 단계라 게이트를 걸 수 없다). `NEXUS_DEV_TOKEN`이 설정된 로컬 dev에서만 값을 돌려주고, 미설정 시 `token=null`이라 노출이 없다. 따라서 위험은 엔드포인트 자체가 아니라 **외부에 노출된 배포에 그 env를 설정하는 것**이다.
 

@@ -3,6 +3,23 @@
 > 목적: **내 로컬 머신에서 Nexus를 띄우고 Cloudflare Tunnel로 팀원에게 열어** 지식검색을 도그푸딩한다. 클라우드 VM·k8s·리버스프록시 없이. TLS와 "누가 들어오나" 게이트는 Cloudflare가 대신한다.
 >
 > ⚠️ **이 문서의 단 하나의 절대 규칙: Cloudflare Access(엣지 인증) 없이는 터널을 팀에 열지 말 것.** 이유는 §0.
+>
+> **전제 확인 (2026-11-14 주석).** 지금 이 런북대로 띄운 배포는 없다(2026-11-11 기준). 런북의 절차는 코드와 맞지만
+> 쓰기 전에 세 가지를 알아야 한다.
+>
+> 1. **이 런북은 「엣지에서만 Access」 모양이다.** Nexus 가 Access JWT 를 직접 검증해 사람마다 principal 을 잇는
+>    경로도 있다(`SPEC-nexus-access-jwt-auth`, `auth/access_jwt.py`, 2026-07-10). 그 설정을 켜면 공유 dev 토큰
+>    경로는 꺼진다(`auth/config.py` — 두 신원 경로가 동시에 돌지 않는다). §8 끝의 「JWT·SSO 는 demand-pull」은
+>    낡았다 — 그 경로는 이미 있고, demand-pull 정책은 2026-07-10 에 지워졌다.
+> 2. ⛔ **팀 배포의 `.env` 에서 `NEXUS_LLM_PROVIDER=claude-code` 와 `NEXUS_DEV_LLM_PROVIDER=claude-code` 를 둘 다
+>    지운다.** 공유 dev 토큰이 잇는 `local-dev` 는 `owner: true` 라 기동 검사(`providers/backend_choice.py`)를
+>    통과한다. 둘 중 하나라도 남으면 터널로 들어온 팀원의 질문이 소유자의 Claude Code 구독(키리스 브리지)으로
+>    답해진다 — 그 검사가 막으려는 바로 그 경우다(구독 자격을 다른 사용자를 대신해 쓰는 것). 엣지에서만 Access 를
+>    쓰면 Nexus 는 Access 가 켜진 줄 모르므로 이 경우를 거부하지 못한다.
+> 3. `task up:prod` 는 `docker-compose.override.yml` 을 병합하지 않지만, `docker-compose.yml` 의 `nexus-app` 이
+>    `env_file: .env` 로 `.env` 전체를 주입한다. 그래서 개발 상자의 `.env`(#43 이 `NEXUS_DEV_LLM_PROVIDER=claude-code`
+>    를 권한다)를 그대로 쓰면 위 2 에 걸린다. 팀 배포의 답변 백엔드는 `anthropic`(유료 키)이고, 그것은 돈을 쓰는
+>    실행이므로 소유자의 허락이 먼저다.
 
 ## 0. 왜 Access가 필수인가 (읽고 시작할 것)
 

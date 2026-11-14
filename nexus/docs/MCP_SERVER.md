@@ -10,6 +10,8 @@
 >
 > **현재 유효한 인터페이스는 CLI 계층입니다**: 루트 `CLAUDE.md` 인터페이스 계약을 준수하며, `tenant` 매개변수를 통해 `default` 및 `design_docs` 멀티 테넌트 코퍼스를 동시에 지원합니다. MCP 연동은 단일 토큰당 단일 테넌트로 범위가 제한됩니다(`auth/principal.py`).
 >
+> **2026-11-14 다시 확인한 것** (위 실측은 그날의 기록이라 고쳐 쓰지 않는다): ① 은 그대로다 — `Dockerfile` 은 여전히 `dev`·`notion`·`a2a`·`slack` 엑스트라만 설치한다. ② 서버 쪽은 `mcp[cli]>=2.0.0,<3`(`pyproject.toml`)이고 `mcp.server.MCPServer` 를 쓴다. 호스트 쪽 버전은 확인 필요. ③ 리포 루트에 `.mcp.json` 이 없다. 도구는 9개에서 18개로 늘었다(§4).
+>
 > **MCP 인터페이스 정식 활성화 요건**: ① 런타임 이미지 빌드 명세에 `mcp` 종속성 추가 및 재빌드 ② 테넌트별 주체(Principal) 식별자 및 인증 토큰 발급/해시 등록 (`config.yaml`) ③ `.mcp.json` 엔드포인트 등록. 요구조건 충족 전 미가동 서버 등록 시 부팅 단계에서 핸드셰이크 예외가 발생하므로 단계적 활성화가 필수적입니다.
 
 
@@ -68,17 +70,30 @@ python -m nexus.mcp --transport http --port 8001
 
 ## 4. 제공 도구 (Tools)
 
-| 도구 | 설명 | 주요 파라미터 |
+도구 목록과 시그니처의 정본은 `nexus/mcp/server.py` 다. 아래는 2026-11-14 에 그 파일에서 옮긴 18개다.
+
+| 도구 | 설명 | 파라미터 |
 |------|------|---------------|
-| `nexus_search` | 하이브리드 검색 (BM25 + Vector + Graph) | `query`, `top_k`, `route`, `tenant` |
-| `nexus_answer` | 검색 + LLM 답변 근거 기반 답변 | `query`, `top_k`, `tenant` |
-| `nexus_graph` | 엔티티 관계 그래프 조회 | `entity`, `hops`, `tenant` |
+| `nexus_search` | 하이브리드 검색 (BM25 + Vector + Graph) | `query`, `top_k`, `route`, `classification_max`, `tenant`, `include_graph`, `history`, `origin_since`, `origin_until` |
+| `nexus_answer` | 검색 + LLM 답변 근거 기반 답변 | `query`, `top_k`, `route`, `classification_max`, `tenant`, `history`, `origin_since`, `origin_until` |
+| `nexus_graph` | 엔티티 관계 그래프 조회 | `entity`, `hops`, `tenant`, `include_evidence` |
 | `nexus_suggest` | 엔티티 자동완성/검색 | `query`, `tenant`, `limit` |
-| `nexus_diff` | 설계-관측 불일치 보고서 | `flag_filter`, `entity_filter`, `tenant` |
+| `nexus_diff` | 설계-관측 불일치 보고서 | `tenant`, `flag_filter`, `entity_filter` |
 | `nexus_status` | 시스템 상태 확인 | (없음) |
-| `nexus_supersede` | 문서 supersession 명시적 선언 — **파괴적**(대상 문서가 검색에서 사라짐) | `old_ref`, `new_ref`, `tenant` |
 | `archon_claim_value` | 개념의 현재 값을 코드 상수에서 조회 | `concept`, `tenant`, `classification_max` |
-| `archon_grade_authority` | 등급/열거형 권한 질의 | `grade`, `enum_name`, `subpath` |
+| `archon_grade_authority` | 등급 계층의 권한 도출 | `grade`, `enum_name`, `subpath` |
+| `nexus_documents_search` | 인덱싱된 문서를 **제목으로** 찾는다 (내용 검색은 `nexus_search`) | `q`, `status`, `origin`, `limit` |
+| `nexus_document_hide` | 문서를 검색에서 내린다 (되돌릴 수 있음) | `rid` |
+| `nexus_document_restore` | 숨겼거나 Notion 에서 사라져 내려간 문서를 다시 올린다 | `rid` |
+| `nexus_supersede` | 문서 supersession 명시적 선언 — **파괴적**(대상 문서가 검색에서 사라짐) | `old_ref`, `new_ref`, `tenant` |
+| `nexus_unsupersede` | supersession 취소 — **사유 필수** | `rid`, `reason` |
+| `nexus_sources_list` | 연결된 Notion root 와 토큰 설정 여부 | (없음) |
+| `nexus_sources_add` | Notion root 연결 (URL 또는 page id) | `url_or_id`, `label` |
+| `nexus_sources_health` | Notion 연결 진단 (토큰 유효 · root 도달) | (없음) |
+| `nexus_sources_sync` | Notion 동기화 시작 (즉시 `run_id`, 백그라운드 실행) | `reconcile`, `dry_run`, `confirm_plan` |
+| `nexus_sync_status` | 동기화 실행 상태 (비우면 최근 실행) | `run_id` |
+
+문서 생명주기·소스 도구는 HTTP API 를 그대로 부르고, 무엇을 바꾸는 호출은 토큰의 capability 를 요구한다 — 문서를 바꾸는 것은 `manage_documents`(`documents/api.py`), root 추가·삭제·미리보기·동기화는 `manage_sources`(`sources/api.py`). capability 가 기본 비어 있는 토큰은 읽기 전용이다.
 
 ---
 
@@ -133,7 +148,8 @@ AI Agent → MCP Protocol → nexus.mcp.server
 ```
 nexus/mcp/
 ├── __init__.py
-├── server.py       # FastMCP 도구 정의 + API 호출 래퍼
+├── server.py       # MCPServer(mcp 2.x) 도구 정의 + API 호출 래퍼
+├── lines.py        # 답변 텍스트에 붙는 줄 (mcp 없이 도는 순수 함수)
 └── __main__.py     # 진입점 (stdio/http transport 선택)
 ```
 

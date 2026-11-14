@@ -306,14 +306,14 @@ class EdgeCandidate:
 class QueryParts:
     original: str          # 원본
     tsquery: str           # mecab-ko 분석 → tsquery 문자열
-    embedding: list[float] # query embedding (768차원)
+    embedding: list[float] # query embedding (배포 세대의 차원 — nomic 768 · KURE-v1 1024, 위 표)
     detected_entities: list[str]  # gazetteer에서 매칭된 entity name
 ```
 
 **동작**:
 1. mecab-ko로 형태소 분석 → 명사/동사어간/외래어 추출
 2. 추출 형태소로 tsquery 생성: `'결제' & '서비스' & '토픽'`
-3. Ollama로 query embedding 생성: `"query: " + original`
+3. `EmbeddingService` 로 query embedding 생성 — 지시문(`search_query: ` 등)은 모델마다 다르다(위 표)
 4. Entity gazetteer에서 매칭: query에 entity name/alias가 포함되면 추출
 
 ### 2.2 BM25 검색

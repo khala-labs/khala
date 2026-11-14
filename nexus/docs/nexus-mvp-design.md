@@ -3,6 +3,19 @@
 > **10일 시범 구축 — Hybrid Search + Graph + OTel Diff**
 > 맥락 기반 AI Agent (Code Review / Troubleshooting)의 초석
 
+> **이후 바뀜 (2026-11-14 주석).** 이 문서는 MVP 설계 시점의 기록이라 본문을 고쳐 쓰지 않는다. 지금 코드와
+> 다른 점 중 자주 걸리는 것만 적는다 — 정본은 코드와 [`../CLAUDE.md`](../CLAUDE.md) 의 이음매 지도다.
+>
+> - **파일 이름.** 본문의 단일 파일 `ingest.py` · `search.py` · `extract_relations.py` 는 없다. 지금은
+>   패키지다 — 적재는 `nexus/ingest/`(모든 경로가 `pipeline.py` 의 `run_ingest` 로 모인다), 검색은
+>   `nexus/search/`(`hybrid.py` · 답변 표면 공용 앞단 `answer_pipeline.py`), 관계 추출은
+>   `nexus/index/graph_extractor.py`, 청킹은 `nexus/ingest/chunker.py`.
+> - **임베딩.** 본문의 `multilingual-e5-base` 와 `vector(768)` 하나가 아니라 세대가 둘이다 —
+>   `nomic-embed-text`(768, Ollama, 기본) · `KURE-v1`(1024, 사이드카). 마지막 배포의 세대는 KURE-v1 이다(ADR-0009).
+> - **검색 융합.** RRF 는 BM25 와 벡터 경로를 융합한다. 그래프는 RRF 에 들어가지 않고 융합 뒤에 붙는 보강이다(`search/hybrid.py`).
+> - **컨테이너.** 「6개」가 아니라 `docker-compose.yml` 의 서비스 9개다(기본 3 + 프로필 6, `../README.md` Quick Start).
+> - **목표.** 「Code Review Agent」 쪽 도구(Observer)는 ADR-0011(2026-11-13 승인)로 접었다.
+
 | 항목 | 값 |
 |------|-----|
 | 대상 | 팀 문서 100–500개 (한국어 주력) + OTel trace |
@@ -465,6 +478,8 @@ class LLMService:
 ```
 
 ### 6.3 나머지: 파일 분리만 잘하면 됨
+
+> 2026-11-14 주석: 아래 표의 파일은 MVP 계획의 이름이다. 지금 위치는 문서 머리의 「이후 바뀜」에 있다.
 
 아래 모듈들은 이미 MVP 설계에서 단일 파일에 모여 있으므로, 2.0에서 해당 파일만 리팩토링하면 된다.
 
