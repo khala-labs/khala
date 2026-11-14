@@ -32,12 +32,12 @@
 
 Nexus는 조직 내부 지식(문서, 정책, 설정)과 운영 사실(OTel trace, metric)을 결합하여 **답변 근거 기반(grounded)으로 검색하고 추론하는 시스템**입니다.
 
-AI Agent(Code Review, Troubleshooting)의 **context provider**로서, 추측이 아닌 실제 문서와 관측 데이터에 기반한 답변을 제공합니다.
+AI Agent 가 CLI · MCP · A2A 로 질의하는 **context provider**로서, 추측이 아닌 실제 문서와 관측 데이터에 기반한 답변을 제공합니다.
 
 ```
 "결제 서비스가 발행하는 토픽이 뭐야?"
 
-→ 검색: Hybrid(BM25 형태소 + Vector 768d by RRF) + Graph 2-hop context
+→ 검색: Hybrid(BM25 형태소 + Vector 768d 또는 1024d, RRF) + Graph 2-hop context
 → 답변 근거: API_CONTRACT.md §5.2, 최근 OTel trace 47건
 → 답변: "payment-service는 payment.completed 토픽을 발행합니다. (confidence: 0.85)"
          + 출처 링크 + trace 포인터
@@ -93,6 +93,12 @@ AI Agent(Code Review, Troubleshooting)의 **context provider**로서, 추측이 
                                                        │
 ```
 
+> 그림은 기본 세대만 그린다. 임베딩 세대는 둘이다 — `nomic-embed-text`(768d, Ollama, 기본) ·
+> `KURE-v1`(1024d, `nexus-embed` 사이드카, `--profile embed`). 마지막 배포의 세대는 KURE-v1 이다
+> (ADR-0009). LLM 백엔드는 `NEXUS_LLM_PROVIDER` 로 고른다 — `anthropic`(기본 모델
+> `claude-sonnet-4-6`, `NEXUS_LLM_MODEL` 로 바꾼다) · `claude-code`(키리스 브리지, 소유자 신원만 —
+> `providers/backend_choice.py`).
+
 ### Data Flow
 
 ```
@@ -120,7 +126,7 @@ BM25와 벡터 검색 경로를 병렬 실행하고 RRF(Reciprocal Rank Fusion, 
 "서비스가" → ["서비스"]  # 조사 '가' 분리
 "발행한다" → ["발행"]    # 어미 '한다' 분리
 
-# 2. Vector 경로: nomic-embed-text (768d) 밀집 벡터 임베딩 (pgvector 연계)
+# 2. Vector 경로: nomic-embed-text (768d) 또는 KURE-v1 (1024d) 밀집 벡터 임베딩 (pgvector 연계)
 
 # 3. RRF 융합: score = Σ 1/(k + rank + 1), k=60
 
@@ -221,8 +227,17 @@ docker compose exec -T nexus-app python -m scripts.migrate   # ← 빠뜨리면 
 | nexus-ollama | Embedding model | 11434 |
 | nexus-app | FastAPI server | **8000** |
 
-OTel 관측 파이프라인(`nexus-otel`, `nexus-tempo`)은 검색·채팅에 불필요하므로 **기본 미기동**.
-OTel 집계를 쓸 때만 옵트인: `docker compose --profile observability up -d`.
+`docker-compose.yml` 의 서비스는 아홉이고, 나머지 여섯은 프로필로 옵트인한다:
+
+| Container | Profile | Role |
+|-----------|---------|------|
+| nexus-embed | `embed` | KURE-v1(1024d) 임베딩 사이드카 |
+| nexus-otel · nexus-tempo | `observability` | OTel 관측 파이프라인 (검색·채팅에 불필요) |
+| nexus-grafana | `grafana` | trace 시각화 (tempo 를 함께 띄운다) |
+| nexus-reingest | `reingest` | 주기 재적재 잡 |
+| nexus-slack | `slack` | Slack Bot (Socket Mode) |
+
+OTel 집계를 쓸 때만: `docker compose --profile observability up -d`.
 
 ### 3. Index Documents
 
@@ -249,18 +264,28 @@ docker exec nexus-app nexus query "하이브리드 검색은 어떻게 결합하
 
 ## API Reference
 
+요청·응답 규격의 정본은 [docs/API_CONTRACT.md](docs/API_CONTRACT.md) 와 코드(`nexus/api.py` ·
+`nexus/documents/api.py` · `nexus/sources/api.py`)다. 아래는 주요 경로만 추린 것이다.
+
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | `POST` | `/search` | Hybrid search (BM25 + Vector + RRF) |
 | `POST` | `/search/answer` | Search + LLM grounded answer |
 | `POST` | `/search/answer/stream` | SSE 스트리밍 답변 (Web UI 채팅) |
+| `POST` | `/search/explain` | 기대한 문서가 경로별로 몇 위였나 (패킷에 못 든 문서까지) |
 | `POST` | `/ingest` | Index Markdown documents |
 | `POST` | `/upload` | Upload & index a single file |
 | `GET` | `/graph/{entity}` | Entity relationships (이름 또는 rid로 조회) |
 | `GET` | `/entities/suggest` | 엔티티 자동완성 (pg_trgm) |
-| `GET` | `/documents` | 인덱싱된 문서 목록 (페이지네이션) |
+| `GET` | `/claims/value` · `/claims/grade-authority` | Archon — 코드 상수 값 · 등급 권한 |
+| `POST` | `/feedback/offer` · `/feedback/vote` · `/feedback/reason` | 답변 피드백 (👍/👎 + 사유) |
+| `GET` | `/documents` · `/documents/{rid}` | 인덱싱된 문서 목록 (페이지네이션) · 한 건 |
+| `POST` | `/documents/{rid}/hide` · `/restore` · `/unsupersede` · `/supersede` | 문서 생명주기 |
+| `GET`·`POST`·`DELETE` | `/sources/notion/...` | Notion root 관리 · 미리보기 · 동기화 (`roots` · `health` · `corpus` · `preview` · `sync`) |
 | `GET` | `/diff` | Design vs. observation mismatch report |
 | `POST` | `/otel/aggregate` | Trigger OTel trace aggregation |
+| `GET` | `/visibility` | 이 principal 이 볼 수 있는 문서 수 (0건의 원인 가르기) |
+| `GET` | `/auth/dev-token` | 로컬 dev 토큰 (`NEXUS_DEV_TOKEN` 이 없으면 `null`) |
 | `GET` | `/status` | System health check |
 
 ### Example: Search with Graph
@@ -346,79 +371,40 @@ nexus unsupersede <ref> --reason "..."      # 그 역. 사유 필수. 체인은 
 
 ## Project Structure
 
+파일 하나하나의 트리는 여기 두지 않는다 — 손으로 관리하던 트리는 실제 패키지보다 뒤처졌다(없는
+`models/document.py` 를 가리키고, 패키지 열 개를 빠뜨렸다). 어디를 **반드시 거쳐야 하는지**는
+[CLAUDE.md 의 이음매 지도](./CLAUDE.md#프로젝트-구조--이음매-지도)가 정본이고, 파일 목록은 `ls` 로 본다.
+아래는 패키지 단위 지도다(2026-11-14 기준).
+
 ```
 nexus/
 ├── nexus/
-│   ├── models/              # CRM 도메인 모델 (7 models)
-│   │   ├── resource.py      #   NexusResource base class
-│   │   ├── document.py      #   Document, Chunk, Entity
-│   │   ├── edge.py          #   Edge, ObservedEdge, Evidence
-│   │   └── ...
-│   │
-│   ├── ingest/              # Ingestion pipeline
-│   │   ├── collector.py     #   File collection + hash dedup
-│   │   ├── scanner.py       #   PII/Secret detection
-│   │   ├── classifier.py    #   Classification rules
-│   │   ├── chunker.py       #   Hierarchical chunking
-│   │   └── pipeline.py      #   Pipeline orchestrator
-│   │
-│   ├── index/               # Indexing engines
-│   │   ├── bm25.py          #   mecab-ko → tsvector
-│   │   ├── embed.py         #   Ollama → pgvector
-│   │   └── graph_extractor.py  # Entity/relation extraction
-│   │
-│   ├── search/              # Search engines
-│   │   ├── hybrid.py        #   BM25 + Vector + Graph + RRF
-│   │   ├── evidence_packet.py  # Evidence assembly
-│   │   └── router.py        #   Query route detection
-│   │
-│   ├── otel/                # OTel integration
-│   │   ├── aggregator.py    #   Tempo → CALLS_OBSERVED
-│   │   ├── resolver.py      #   Service name resolution
-│   │   └── diff_engine.py   #   Design vs. observation diff
-│   │
-│   ├── llm/                 # LLM integration
-│   │   ├── answer.py        #   Grounded answer generation
-│   │   └── prompts.py       #   System/user prompts
-│   │
-│   ├── providers/           # External API wrappers
-│   │   ├── embedding.py     #   EmbeddingService (Ollama)
-│   │   └── llm.py           #   LLMService (Claude API)
-│   │
-│   ├── repositories/        # Data access
-│   │   └── graph.py         #   GraphRepository Protocol
-│   │
-│   ├── slack/               # Slack Bot
-│   │   ├── app.py           #   Socket Mode 진입점
-│   │   ├── bot.py           #   이벤트 핸들러 + API 호출
-│   │   └── formatter.py     #   Block Kit 포매터
-│   │
-│   ├── mcp/                 # MCP Server (AI Agent 도구)
-│   │   ├── server.py        #   FastMCP 도구 9개 정의
-│   │   └── __main__.py      #   진입점 (stdio/http)
-│   │
-│   ├── web/                 # Web UI (Vanilla JS, 빌드 불필요)
-│   │   ├── index.html       #   SPA 쉘
-│   │   ├── css/style.css    #   다크 테마 + 한국어 타이포그래피
-│   │   └── js/              #   라우터, API 클라이언트, 뷰 5개
-│   │
-│   ├── api.py               # FastAPI endpoints (16개)
-│   ├── cli.py               # Typer CLI
-│   ├── db.py                # PostgreSQL connection pool
-│   ├── rid.py               # Canonical ID generation
-│   └── utils.py             # get_search_text()
+│   ├── api.py · cli.py      # FastAPI 앱 · Typer CLI (`nexus ...`)
+│   ├── ingest/              # 수집 → PII 검사 → 분류 → 청킹. 모든 적재 경로는 pipeline.py(run_ingest)로 모인다
+│   ├── index/               # BM25(mecab-ko) · 임베딩 · 벡터 컬럼 · 그래프 추출 · 앵커
+│   ├── search/              # hybrid.py(BM25+Vector RRF) · answer_pipeline.py(답변 표면 공용 앞단) · reconcile.py(근거 묶음)
+│   ├── llm/                 # 답변 생성 · 인용/숫자 검증 · prompt_version · 실패 사유
+│   ├── providers/           # EmbeddingService · LLMService · 답변 백엔드 선택
+│   ├── repositories/        # GraphRepository
+│   ├── models/              # CRM 모델 (resource · chunk · claim)
+│   ├── auth/                # bearer 토큰 → (tenant, clearance) · Cloudflare Access JWT
+│   ├── claims/              # Archon — 코드 상수 값 · 소유자 판정
+│   ├── documents/ · sources/  # 문서 생명주기 API · Notion 소스 콘솔 API
+│   ├── feedback/ · health/  # 답변 피드백 · 배포 건강 신호
+│   ├── otel/                # Tempo → CALLS_OBSERVED · 설계-관측 diff
+│   ├── a2a/                 # A2A 서버 (플래그로 켠다)
+│   ├── mcp/                 # MCP 서버 (도구 18개, mcp 2.x `MCPServer`)
+│   ├── slack/               # Slack Bot (Socket Mode)
+│   ├── tools/               # 개발용 도구 (키리스 LLM 브리지)
+│   └── web/                 # Web UI (Vanilla JS, 빌드 불필요)
 │
-├── tests/                   # 151 tests across 14 files
-├── docs/                    # Design documents
-│   ├── API_CONTRACT.md      #   API 계약서
-│   ├── UI_INTEGRATION.md    #   Web UI 연동 규격
-│   ├── SLACK_BOT.md         #   Slack Bot 설정 가이드
-│   ├── MCP_SERVER.md        #   MCP Server 설정 가이드
-│   └── ...
+├── tests/                   # 시험 함수 약 3,000개 (2026-11-14 `git grep` 으로 2,994)
+├── docs/                    # 설계 문서 · 가이드 · 사전 등록 기록 (docs/README.md)
+├── migrations/              # SQL 마이그레이션 (001~052)
 ├── config.yaml              # Classification, PII, search params
 ├── entities.example.yaml    # Entity gazetteer 예시 (읽히지 않음 — 쓰려면 entities.yaml 로 복사)
-├── init.sql                 # DB schema (6 tables + views)
-├── docker-compose.yml       # 6-container infrastructure
+├── init.sql                 # 기본 스키마 (이후 변경은 migrations/)
+├── docker-compose.yml       # 서비스 9개 (기본 3개 + 프로필 6개, 위 Quick Start 표)
 ├── docker-compose.test.yml  # 통합 테스트용 (포트 충돌 방지)
 └── Dockerfile               # Python 3.11 + mecab-ko
 ```
@@ -460,7 +446,7 @@ MVP 단계부터 교체 가능한 추상화를 적용하여, 2.0 전환 시 재�
 ## Testing
 
 ```bash
-# 전체 테스트 (151 tests — e2e는 DB 연결 시 실행)
+# 전체 테스트 (시험 함수 약 3,000개 — DB 가 필요한 것은 NEXUS_TEST_DB_URL 이 있을 때만 돈다)
 docker exec nexus-app pytest tests/ -v
 
 # 카테고리별
@@ -545,11 +531,11 @@ entities:
 
 ## Slack Bot
 
-⚠️ **현재 동작하지 않는다.** 실행 진입점이 없고(`[project.scripts]`·compose 모두 미등록),
-`nexus/slack/bot.py` 가 API 호출에 `Authorization` 헤더를 붙이지 않아 기본 `enforced` 모드에서
-모든 질의가 401 이다. 살릴지 삭제할지 미결.
+`@khala` 멘션이나 DM 으로 질의하면 grounded 답변을 Slack 메시지로 돌려준다. 진입점은
+`nexus-slack`(`[project.scripts]`)이고 compose 의 `nexus-slack` 서비스(`--profile slack`)로 띄운다.
+API 호출에는 `NEXUS_SLACK_TOKEN` bearer 를 붙인다 — 테넌트·clearance 는 그 principal 이 정한다.
 
-자세한 결함 내용: [docs/SLACK_BOT.md](docs/SLACK_BOT.md)
+설정 가이드: [docs/SLACK_BOT.md](docs/SLACK_BOT.md)
 
 ---
 
@@ -563,7 +549,14 @@ python -m nexus.mcp                    # stdio (로컬)
 python -m nexus.mcp --transport http   # streamable-http (원격)
 ```
 
-9개 도구 제공: `nexus_search`, `nexus_answer`, `nexus_graph`, `nexus_suggest`, `nexus_diff`, `nexus_status`, `nexus_supersede`, `archon_claim_value`, `archon_grade_authority`
+도구 18개(2026-11-14, `nexus/mcp/server.py`): 검색·답변(`nexus_search` · `nexus_answer` ·
+`nexus_graph` · `nexus_suggest` · `nexus_diff` · `nexus_status`), Archon(`archon_claim_value` ·
+`archon_grade_authority`), 문서 생명주기(`nexus_documents_search` · `nexus_document_hide` ·
+`nexus_document_restore` · `nexus_supersede` · `nexus_unsupersede`), Notion 소스(`nexus_sources_list` ·
+`nexus_sources_add` · `nexus_sources_health` · `nexus_sources_sync` · `nexus_sync_status`).
+
+⚠️ 런타임 이미지(`Dockerfile`)는 `mcp` 엑스트라를 설치하지 않는다 — 컨테이너 안에서는 `python -m nexus.mcp`
+가 돌지 않는다. 지금 에이전트가 쓰는 문은 CLI 다(루트 `CLAUDE.md`).
 
 ⚠️ Nexus 기본 auth 모드가 `enforced` 라 `NEXUS_MCP_TOKEN` 없이는 모든 툴이 401 이다 ([docs/MCP_SERVER.md](./docs/MCP_SERVER.md) §6).
 
@@ -573,24 +566,9 @@ python -m nexus.mcp --transport http   # streamable-http (원격)
 
 ## Roadmap
 
-테마 기반 페이즈로 진화한다. 전체 로드맵은 [에코시스템 ROADMAP.md](./ROADMAP.md) 참조.
-
-```
-Phase 1 — 팀 맞춤형
-  ├ tenant별 검색 프로파일 (BM25/Vector/Graph 가중치 조정)
-  ├ tenant별 문서 풀 격리 (팀 전용 + 공유)
-  └ 역할별 결과 reranking
-
-Phase 2 — 검색 지능화
-  ├ Adaptive 검색 깊이 (simple/standard/deep)
-  ├ router.py 확장 (쿼리 복잡도 자동 판정)
-  └ Cross-Encoder Reranking
-
-Phase 3 — 거버넌스
-  ├ JWT 인증/인가
-  ├ 감사 추적
-  └ tenant 관리 UI
-```
+방향(RAG·LLMOps 실험과 다음 실험 순서)은 [ROADMAP.md](./ROADMAP.md) 가 정본이다. 2026-06 의 페이즈
+계획(팀 맞춤형 → 검색 지능화 → 거버넌스)은 그 부록에 항목별 상태와 함께 있다 — 인증은 JWT 가 아니라
+불투명 bearer 토큰으로 이미 출하됐다.
 
 ---
 
@@ -603,8 +581,8 @@ Phase 3 — 거버넌스
 | CLI | Typer | Developer productivity |
 | Database | PostgreSQL 16 | pgvector + BM25 + Graph 통합 |
 | Korean NLP | mecab-ko + mecab-ko-dic | 조사/어미 정확 분리 |
-| Embedding | nomic-embed-text (Ollama) | 768d, multilingual, local |
-| LLM | Claude Sonnet (Anthropic) | Grounded answer generation |
+| Embedding | nomic-embed-text (Ollama) · KURE-v1 (sidecar) | 768d 기본 · 1024d 한국어 (ADR-0009), local |
+| LLM | Claude Sonnet (Anthropic) · 키리스 브리지(dev) | Grounded answer generation. `NEXUS_LLM_PROVIDER` 로 고른다 |
 | Tracing | OTel Collector + Tempo | Trace 수집 + 쿼리 |
 | Container | Docker Compose | One-command infra |
 
@@ -612,17 +590,24 @@ Phase 3 — 거버넌스
 
 ## Environment Variables
 
+전체 목록과 설명의 정본은 [`.env.example`](./.env.example) 이다. 자주 쓰는 것만:
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_URL` | `postgresql://nexus:nexus@localhost:5432/nexus` | PostgreSQL 연결 |
 | `OLLAMA_URL` | `http://localhost:11434` | Ollama API |
-| `ANTHROPIC_API_KEY` | — | Claude API key (LLM 답변용) |
+| `ANTHROPIC_API_KEY` | — | Claude API key (`anthropic` 백엔드) |
+| `NEXUS_LLM_PROVIDER` | `anthropic` | 답변 백엔드 — `anthropic` · `claude-code`(키리스 브리지, owner principal 만) |
+| `NEXUS_DEV_LLM_PROVIDER` | — | `local-dev` principal 하나만의 백엔드 (개발 상자는 `claude-code`) |
+| `NEXUS_LLM_MODEL` | `claude-sonnet-4-6` | `anthropic` 백엔드의 모델 id |
+| `NEXUS_EMBEDDING_MODEL` · `_COLUMN` · `_BACKEND` | config.yaml 값 | 임베딩 세대 (함께 움직인다) |
 | `TEMPO_URL` | `http://localhost:3200` | Grafana Tempo |
 | `OTEL_COLLECTOR_URL` | `http://localhost:4318` | OTel Collector |
 | `DEFAULT_TENANT` | `default` | 기본 테넌트 |
 | `SLACK_BOT_TOKEN` | — | Slack Bot OAuth Token (Slack Bot용) |
 | `SLACK_APP_TOKEN` | — | Slack App-Level Token (Socket Mode) |
 | `NEXUS_API_URL` | `http://localhost:8000` | Slack Bot → Nexus API 주소 |
+| `NEXUS_SLACK_TOKEN` | — | Slack Bot 의 Nexus bearer (읽기 전용 principal) |
 
 ---
 

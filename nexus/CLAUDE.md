@@ -44,10 +44,10 @@
 - **Framework**: FastAPI (API) + Typer (CLI)
 - **DB**: PostgreSQL 16 + pgvector + tsvector(mecab-ko) + pg_trgm
 - **Embedding**: `EmbeddingService` 래퍼를 **반드시** 경유. 세대는 둘 — `nomic-embed-text`(768, ollama, 기본) · `KURE-v1`(1024, sidecar). **차원과 지시문은 설정이 아니라 모델의 사실**이라 `providers/embedding.py` 의 레지스트리에 산다(config.yaml 에 숫자를 또 적으면 세 번째 진실이 생긴다).
-- **LLM**: `LLMService` 래퍼를 **반드시** 경유. 백엔드 이음매는 `NEXUS_LLM_PROVIDER` — `anthropic`(기본, 키 필요) · `claude-code`(dev, 호스트의 Claude Code 를 브리지로. **유료 키 불필요**). dev 실행이 조용히 돈을 쓰지 않게 하는 게 이 이음매의 목적이다.
+- **LLM**: `LLMService` 래퍼를 **반드시** 경유. 백엔드 이음매는 `NEXUS_LLM_PROVIDER` — `anthropic`(기본, 키 필요) · `claude-code`(dev, 호스트의 Claude Code 를 브리지로. **유료 키 불필요**). dev 실행이 조용히 돈을 쓰지 않게 하는 게 이 이음매의 목적이다. 백엔드는 principal 마다 갈린다(SPEC-nexus-per-principal-answer-backend, #16): `claude-code` 로 풀리는 principal 은 `owner: true` 여야 하고 아니면 기동이 거부된다(`providers/backend_choice.py`). 개발 상자는 `NEXUS_LLM_PROVIDER=anthropic` + `NEXUS_DEV_LLM_PROVIDER=claude-code` 로 `local-dev` 하나만 브리지에 보낸다(#43).
 - **한국어**: mecab-ko + mecab-ko-dic (Docker 내 설치)
 - **OTel**: OpenTelemetry Collector + Grafana Tempo
-- **Container**: Docker Compose (6개 컨테이너)
+- **Container**: Docker Compose — `docker-compose.yml` 의 서비스 9개. 기본은 db·ollama·app 셋이고 나머지 여섯(embed · otel · tempo · grafana · reingest · slack)은 프로필로 켠다. 세는 법: `docker compose config --services`(프로필 포함은 `--profile '*'`)
 - **의존성을 늘리지 않는다**: Neo4j·Redis·Elasticsearch 를 더하지 않는다. 그래프는 `GraphRepository` 뒤에 있으므로 필요해지면 그때 바꾸면 되고, 지금 더하면 운영 대상만 늘어난다.
 
 ---
@@ -70,6 +70,7 @@
 | 벡터가 **낡았을 수 있는지** 보기 | `index/provenance.py` (`fetch_freshness`) | 복구 큐는 `WHERE <컬럼> IS NULL` 이라 **안 지워진 낡은 값을 구조적으로 못 본다** — 이 리포가 그 계열로 두 번 데였다. 같은 표의 `written_at` 이 2026-08-14 부터 쌓이고 있었는데 **읽는 코드가 하나도 없었다.** ⭐ 값은 부정 쪽이다: `written_at >= updated_at` 이면 **낡을 수 없다** ⇒ 전수 재계산(수십 분)이 그만큼 줄어든다. ⛔ **`candidates` 는 낡은 개수가 아니라 상한이다** — `updated_at` 은 내용이 안 바뀐 재적재에도 움직인다. 판정은 `scripts/check_stale_vectors.py` 가 재계산으로 한다 |
 | 적재 (모든 경로) | `ingest/pipeline.py` (`run_ingest`) | CLI·HTTP·A2A·Notion 이 전부 여기로 모이므로 세대 게이트가 한 곳이면 된다 |
 | 출처 등급 표기 | `search/provenance.py` | 프롬프트·응답·MCP·웹이 같은 어휘를 써야 한다. 사본 금지 |
+| 답변 표면의 검색 앞단 (엔티티 → route → `hybrid_search` → 패킷) | `search/answer_pipeline.py` (`retrieve_for_answer`) | `/search/answer` · `/search/answer/stream` · A2A · CLI 가 이 순서를 각자 베껴 들고 있다가 사본이 갈렸다(스트림이 `packet_for_answer` 없이 패킷을 만들었고, 뒤에 합성 데이터 표시를 빠뜨렸다). 2026-11-12 한 곳으로 모았다(SPEC-nexus-shared-answer-pipeline, #26). ⚠ 의존성은 import 가 아니라 **주입**이다 — 테스트 100여 개가 `nexus.api` 의 이름을 patch 하므로, HTTP 핸들러는 요청 시점에 `nexus.api` 의 전역으로 `RetrievalDeps` 를 만든다. 이 모듈에서 `nexus.api` 를 import 하지 마라 |
 | 근거에 무언가 덧붙이기 | `search/reconcile.py` (`packet_for_answer`) | 네 표면(web API ×2·A2A·CLI)이 전부 여기로 모인다. 표면마다 붙이면 하나가 조용히 빠진다 — **2026-09-02 에 실제로 그랬다**: 스트리밍 경로가 `assemble_packet` 을 직접 불러 정정·짝·코드 값이 웹 채팅에서만 빠졌다(외부 평가 F2). 지금은 `tests/test_answer_surfaces_share_the_seam.py` 가 표면을 센다 |
 | 앵커 상태 판정 | `index/anchors.py` (`status_from_counts`) | 재검사(CLI)와 요청 경로(`search/anchor_status.py`)가 같은 규칙을 써야 한다 |
 | clearance 판정 | `auth/clearance.py` | 정본 하나. 사본을 만들면 두 답이 생긴다 |
@@ -162,6 +163,7 @@
 > export 한 셸에서 돌린다. 세대를 DB 에 선언해 두면 어긋난 실행은 **거부된다**:
 >
 > ```bash
-> docker exec nexus-app nexus generation declare --tenant default >     --column embedding_1024 --model KURE-v1 --by <who>
+> docker exec nexus-app nexus generation declare --tenant default \
+>     --column embedding_1024 --model KURE-v1 --by <who>
 > docker exec nexus-app nexus generation show
 > ```
