@@ -26,7 +26,22 @@ human disposition → `approve`).
 
 > **Note on ADR-0011:** ADR-0011 marks ADR-0004's rows for Observer, Probe, and Adept as historical. In ADR-0003, the clause "vouched via ken" reads as unimplemented from ADR-0011 onward (not retracted). The path mappings in ADR-0005 §3 and ADR-0007 describe directories that left this repository on 2026-11-08 for archived organization repositories. Those ADRs remain accepted and unedited; this index is the pointer to current state.
 
+> **Note on ADR-0004's component list:** ADR-0004 predates the ADR-0005 rename.
+> In current naming, "Probe" is Observer, "mutqa" is Probe, "ken" is Adept,
+> and "specledger" is Arbiter. Observer, Probe, and Adept were retired by
+> ADR-0011, which marks those rows historical, so Context, Decision, and
+> Consequences describe the component set as of 2026-06-26. The tools today are
+> Nexus and Arbiter.
+
 > **Note on ADR-0001:** A2A work was stopped before finding a real consumer. That stop is recorded in ADR-0002, and `OPEN.md` decision D4 keeps its 18 open questions out of the open-item count.
+
+> **Note on ADR-0001's tool names:** In ADR-0001, "Probe" is the PR analyzer now
+> named Observer. It was retired by ADR-0011, so the Phase 1 client named there
+> no longer exists as a tool.
+
+> **Note on ADR-0008 §7:** §7 names Adept, Probe, and Observer as separate tools
+> reading Nexus. All three were retired by ADR-0011 after ADR-0008 was written,
+> and the §7 scope statement holds as of 2026-08-01.
 
 > **Note on ADR-0012:** ADR-0012 reverses `SPEC-nexus-sufficiency-signal` (migration 012 undone). The SPEC remains approved and unedited; read the SPEC together with ADR-0012.
 
