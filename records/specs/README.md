@@ -4,7 +4,14 @@ Khala 생태계의 시스템 아키텍처 및 구현 상세 사양서입니다. 
 
 ## 사양 색인 (Index)
 
-각 SPEC의 기준 상태는 front matter에 기록되며, `../INDEX.md`는 이를 바탕으로 생성된다(CI 검증). 비고 열은 도구 퇴역이나 진행 중단에 따른 historical, 후속 기록이 번복한 superseded 항목을 표시한다. 해당 SPEC들은 approved 기록으로 유지되며 본문을 수정하지 않는다.
+각 SPEC의 기준 상태는 front matter에 기록되며, `../INDEX.md`는 이를 바탕으로 생성된다(CI 검증).
+
+- **상태** 열은 front matter 의 `status` 다. approved 는 서명된 기록이라는 뜻이고, 구현됐다거나 지금 그대로 적용된다는 뜻은 아니다. 구현 여부는 이 표가 말하지 않는다.
+- **일자** 열은 front matter 의 `date`(기록일)다. 그 칸이 없는 SPEC 은 `—` 다. 승인 시각은 front matter 의 `reviewed_at` 에 있다.
+- **비고** 열의 표시는 아래 셋이다. 어느 경우에도 본문은 고치지 않고 상태도 바꾸지 않는다 — approved 는 approved 로, 승인된 적 없는 draft 는 draft 로 남는다.
+  - historical — 도구 퇴역([ADR-0011](../adr/ADR-0011-the-technical-debt-legs-two-tools-are-retired-and-the-co.md), 2026-11-12 승인)이나 진행 중단으로 더 진행하지 않는 사양
+  - A2A 중단(`OPEN.md` D4) — 구현 진행을 멈춘 것이고 사양을 철회하지 않았다. 소비자가 생기면 D4 의 질문과 함께 다시 연다
+  - superseded — 후속 기록이 번복했다. 무엇이 남는지는 그 후속 기록이 정본이다(sufficiency-signal 은 [ADR-0012](../adr/ADR-0012-the-sufficiency-signal-is-reversed-on-its-review-date-mi.md) 가 신호 전체를 되돌렸고, 남은 열린 항목은 그 ADR 에 있다)
 
 | ID | 제목 | 상태 | 연결 ADR | 일자 | 비고 |
 |----|------|------|----------|------|------|
