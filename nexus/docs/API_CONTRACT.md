@@ -1,7 +1,15 @@
 # Nexus API 계약서
 
 > **이 문서는 전체 목록이 아니다.** 핵심 8개 엔드포인트의 request/response 스키마와, 모든 엔드포인트에 공통으로 걸리는 규칙을 정의한다.
-> FastAPI + Pydantic v2 기준. Claude Code는 이 문서를 보고 정확한 Pydantic 모델을 생성해야 한다.
+> FastAPI + Pydantic v2 기준. 아래 모델 선언은 **요약**이다 — 필드와 타입의 정본은 런타임 `/openapi.json` 이다(아래 §문서 범위). 이 문서가 정하는 것은 그 스키마로 안 보이는 규칙과, 필드가 **왜** 있는가다.
+
+### 확인 2026-11-17 — 공통 규칙과 §2 만
+
+- 대상: 머리말 둘째 줄, §공통 규칙, §2 `/search/answer` (요청 · `evidence_only` · `answer_context` · `search_text` · 응답 · 에러 케이스). master `731833b` 의 코드에 대 봤다.
+- 대체: 「모든 응답은 `NexusResponse` 로 감싼다」 → 스트림(SSE)과 UI 진입점 `/` 는 감싸지 않는다. 「에러는 `error` 필드로」 → FastAPI 기본 본문 `detail` 로 온다. §2 의 「`502`: LLM API 호출 실패」 → 생성 실패는 `200` + `llm_failed=true` 로만 온다. 「모델을 한 번도 안 부른다」 → 이력이 있으면 재작성기가 모델을 한 번 부른다. 「충분성 판정자」 → 2026-11-10 ADR-0012 로 신호가 되돌려져 부르는 곳이 없다. 머리말의 「이 문서를 보고 정확한 모델을 생성해야 한다」 → 모델 선언은 요약이고 정본은 `/openapi.json` 이다(§문서 범위와 맞춘다).
+- 유지: 요청 모델 전부 `extra="forbid"`. `identifier_channel` · `answer_context` · `search_text` 는 `AnswerRequest` 에 있어 `/search/answer` 와 스트림이 받고 `/search` 는 `422`. `evidence_only` 는 `/search/answer` 에만 있고 생성 필드 열 개를 `None` 으로 싣는다. DB 연결 실패는 `503`.
+- 확인 안 함: §1 과 §3~§11 의 모델 선언, 스트림 이벤트 페이로드, `/openapi.json` 과 이 문서의 필드 하나하나 대조.
+- 근거: `nexus/nexus/api.py`(`RequestModel` · `NexusResponse` · `AnswerRequest` · `SearchAnswerRequest` · `_NARRATION_KEYS` · `_server_error` · `search_answer` · `search_answer_stream`), `nexus/nexus/llm/answer.py`(생성 예외 처리), `nexus/nexus/search/rewrite.py`, `nexus/nexus/documents/api.py` · `nexus/nexus/sources/api.py`(`_Envelope`), `records/adr/ADR-0012-*.md`
 
 ## 문서 범위 및 관리 원칙
 
@@ -25,8 +33,8 @@
 
 ## 공통 규칙
 
-- 모든 응답은 `NexusResponse` wrapper로 감싼다
-- 에러는 HTTP status code + `error` 필드로 반환
+- JSON 응답은 `NexusResponse` 모양(`success` · `data` · `error` · `meta`)으로 감싼다. 문서·소스 콘솔 라우터는 같은 모양의 자기 모델(`_Envelope`)을 쓴다. ⚠ 예외: 스트림(`/search/answer/stream`, SSE)과 UI 진입점 `/` 는 감싸지 않는다
+- 에러는 HTTP status code 와 FastAPI 기본 본문 `{"detail": …}` 로 온다. `NexusResponse.error` 칸에 싣지 않는다. 500 의 `detail` 은 `internal error (ref …)` 뿐이고 원인은 운영자 로그에 있다(`api.py::_server_error`)
 - 모든 검색/조회에 `tenant` + `classification` 필터 자동 적용
 - timestamp는 ISO 8601 형식 (UTC)
 - rid는 항상 `make_rid()` 함수로 생성된 값
@@ -65,7 +73,7 @@
 | `identifier_channel` + `_asked` | 안 켰다 / 켰는데 발동 안 했다 | `/search/answer` |
 | `evidence_only` | 생성했다 / 검색 근거까지만 만들었다(생성 필드가 `None` 인 이유) | `/search/answer` |
 | `evidence_snippets[].rank` | 상위 k 의 몇 위였나 / 필(`None`) — **`score` 로는 못 가른다** | `/search/answer` · `…/stream` |
-| `fusion_doc_agreement` | 융합이 문서 일치를 셌다 / 오늘의 융합 | `/search/answer` · `…/stream`(`done`) |
+| `fusion_doc_agreement` | 융합이 문서 일치를 셌다 / 기존 융합 | `/search/answer` · `…/stream`(`done`) |
 | `search_text_len` | 검색 글로 찾았다(그 길이) / 질문으로 찾았다(0) | `/search/answer` · `…/stream`(`done`) |
 | `n_unknown_origin_time` | 좁히기가 닿지 못한 건수 (**안 물었으면 `None`**) | 검색·답변 |
 | `degraded` · `enrichment_failed` | 빈 결과 / 실패한 경로 | 검색·답변 |
@@ -198,12 +206,12 @@ class AnswerRequest(BaseModel):
                                         # 대상이다 (`docs/PROCEDURE_RETRIEVAL_PREREGISTRATION.md` T2)
     fusion_doc_agreement: bool = False  # 융합에 **문서 일치**를 더한다 — 같은 문서를 다른 절로 짚은
                                         # 경로들의 표를 문서로 모은다. ⛔ 기본 비활성화, 꺼지면 융합은
-                                        # 오늘과 비트까지 같다. 켜면 **모든 질의의 순위가 움직인다**
+                                        # 이 필드가 생기기 전과 비트까지 같다. 켜면 **모든 질의의 순위가 움직인다**
                                         # (`docs/FUSION_DOCUMENT_AGREEMENT_PREREGISTRATION.md` F1)
     answer_context: str | None = None   # 요청자의 자료 — **답변 프롬프트에만** 들어간다. 상한
                                         # 8,000 글자, 넘으면 422(`ctx.max_length`) · 자르지 않는다
     search_text: str | None = None      # **검색에만** 쓰는 글 — `answer_context` 의 거울(아래).
-                                        # 비었거나 공백뿐이면 안 준 것이고 오늘과 같다
+                                        # 비었거나 공백뿐이면 안 준 것이고 필드가 없을 때와 같다
 ```
 
 `/search/answer` 가 실제로 받는 모델은 그 하위 모델이다 — 스트림(`AnswerRequest`)보다 필드가 하나 많다:
@@ -213,7 +221,7 @@ class SearchAnswerRequest(AnswerRequest):
     evidence_only: bool = False         # 생성을 건너뛰고 **근거 묶음까지만** 돌려준다(아래)
 ```
 
-⚠ `identifier_channel` · `answer_context` · `search_text` 는 **이 요청에만 있다.** `/search` 로 보내면 `422` 다 —
+⚠ `identifier_channel` · `answer_context` · `search_text` 는 **`AnswerRequest` 에만 있다** — `/search/answer` 와 스트림(§9)이 받고, `/search` 로 보내면 `422` 다 —
 전에는 조용히 버려져서 *"켰는데 처치가 안 걸렸다"* 를 호출자가 알 방법이 없었다.
 
 `evidence_only` 는 **검색만으로 정해지는 것을 측정할 때** 쓴다(2026-10-01). 융합 처치의 주 변수가
@@ -221,10 +229,10 @@ class SearchAnswerRequest(AnswerRequest):
 측정하면 두 버전에 세 시간 남짓이 든다. `/search` 는 **같은 검색이 아니다** — 식별자 채널 · 제외 종류
 필드가 없고, `top_k` 가 10 이고, 필 넷을 안 붙인다.
 
-- **같은 처리기**가 같은 검색 · 같은 답변 근거 묶음 · 같은 버전 필드를 만든다. 답변 근거 필드는 생성하는 버전과 같은 코드가
+- `evidence_only` 를 안 켠 `/search/answer` 와 **같은 처리기**가 같은 검색 · 같은 답변 근거 묶음 · 같은 버전 필드를 만든다. 답변 근거 필드는 생성하는 버전과 같은 코드가
   만든다(`llm/answer.py` 의 `narrate=False`) — 따로 만든 엔드포인트는 언젠가 갈라진다
-- 모델을 **한 번도** 안 부른다. 충분성 판정자도 안 깨운다. 단 `history` 가 있으면 재작성은 그대로
-  돈다 — 같은 검색이어야 하므로
+- 답변 모델을 안 부른다. 단 `history` 가 있으면 재작성기는 그대로 돈다 — 같은 검색이어야 하므로.
+  재작성기도 모델 호출이라(`search/rewrite.py`) 이력이 있는 요청은 모델을 **한 번** 부른다
 - 생성이 내는 필드(`answer` · `citations` · `unverified_citations` · `unverified_numbers` · `numbers` ·
   `usage` · `abstained` · `abstain_reason` · `llm_failed` · `llm_failure_reason`)은 **`None`** 이다.
   0 · False 로 두면 「인용 0건」·「생성 실패 안 함」으로 읽힌다. 필드는 빼지 않는다
@@ -239,8 +247,8 @@ class SearchAnswerRequest(AnswerRequest):
 - 자리: 사용자 프롬프트 안, 질문 다음 · 답변 근거 앞의 표시된 절(`## 요청자가 준 자료 …`)과 끝의 닫는
   문장. 절 머리말이 **자료는 답변 근거가 아니다** · 인용하지 마라 · 별칭으로 가리켜라 · 핵심 규칙을 못
   이긴다고 적는다. 시스템 프롬프트는 안 바뀐다
-- 안 닿는 곳: 검색 · 재작성기 · 충분성 판정자 · 질문 원문 보존. 기록에는 **길이와 해시만** 남는다
-- 비었거나 공백뿐이면 안 준 것이다 — 그때 프롬프트는 오늘과 바이트 단위로 같다
+- 안 닿는 곳: 검색 · 재작성기 · 질문 원문 보존. 기록에는 **길이와 해시만** 남는다
+- 비었거나 공백뿐이면 안 준 것이다 — 그때 프롬프트는 이 필드가 생기기 전(2026-09-30 이전)과 바이트 단위로 같다
 - 숫자 검증의 `grounded` 는 *모델에게 보여 준 것 어딘가* 이고 이 자료도 그 안이다 — 자료에서 옮겨
   적은 수는 지어낸 수로 안 센다
 - 응답의 `answer_context_len` 이 실제로 쓴 길이를 돌려준다(0 = 안 썼다)
@@ -248,12 +256,12 @@ class SearchAnswerRequest(AnswerRequest):
 `search_text` 는 그 반대쪽이다 — **검색 쪽은 이 글만, 답 쪽은 `query` 만** 본다(2026-10-05). 물음을 뗀
 짧은 글로 검색하면서 답변 프롬프트의 질문 자리는 그대로 두려는 호출자를 위한 칸이다.
 
-| 자리 | 필드를 주면 | 안 주면(오늘) |
+| 자리 | 필드를 주면 | 안 주면(필드가 생기기 전과 같다) |
 |---|---|---|
 | 원문 경로(BM25 · 벡터) · 식별자 채널의 토큰 · 엔티티 · 경로 이름 | `search_text` | `query`(재작성됐으면 재작성문) |
 | 근거 묶음의 코드 값 맞추기(`packet_for_answer` 의 질문) | `search_text` | `query` |
 | 재작성기 | **안 돈다** | 이력이 있을 때 |
-| 답변 프롬프트의 질문 자리 · 숫자 검증 · 충분성 판정자 · 질문 원문 보존 | `query` | 같음 |
+| 답변 프롬프트의 질문 자리 · 숫자 검증 · 질문 원문 보존 | `query` | 같음 |
 
 - ⚠ 식별자 채널은 **`search_text` 에서만** 토큰을 뽑는다. `query` 에만 있는 토큰은 검색에 안 쓰인다
 - 재작성기가 안 도는 이유: 재작성문은 답변 프롬프트의 질문 자리로 들어가므로, 돌리면 검색 글이 거기로 샌다
@@ -265,7 +273,10 @@ class SearchAnswerRequest(AnswerRequest):
 ### Response
 ```python
 class AnswerResponse(BaseModel):
-    answer: str                         # LLM 생성 답변 (답변 근거 인용 포함)
+    # ⚠ `evidence_only=true` 면 생성 필드 열 개(`answer` · `citations` · `unverified_citations` ·
+    # `unverified_numbers` · `numbers` · `usage` · `abstained` · `abstain_reason` · `llm_failed` ·
+    # `llm_failure_reason`)가 전부 `None` 이다(`api.py::_NARRATION_KEYS`). 아래 타입은 생성한 응답 기준이다
+    answer: str | None                  # LLM 생성 답변 (답변 근거 인용 포함). 생성 실패면 안내문 + 근거
     evidence_snippets: list[EvidenceSnippet]
     graph_findings: GraphFinding | None
     provenance: list[ProvenanceRef]     # 사용자가 검증할 수 있는 출처
@@ -370,10 +381,11 @@ class ProvenanceRef(BaseModel):
 - `413` / `400`: `history` 상한 초과 / 모양 오류 — **조용히 자르지 않는다** (SPEC §3.1)
 - `422`: 스키마에 없는 요청 필드 (§알 수 없는 필드)
 - `503`: DB 연결 실패
-- `502`: LLM API 호출 실패 → answer="답변을 생성할 수 없습니다" + evidence는 그대로 반환
+- `500`: 그 밖의 서버 오류 — `detail` 은 `internal error (ref …)` 뿐이다
 
-⚠ **생성 실패는 `502` 로만 오지 않는다.** 답변 근거는 살아 있고 생성만 죽은 실행은 `200` 에
-`llm_failed=true` 로 온다 — 그 경우 답변 자리의 문자열을 답으로 렌더하면 안 된다.
+⚠ **생성 실패는 오류 코드로 오지 않는다 (확인 2026-11-17).** 예전 이 자리의 「`502`: LLM API 호출 실패」는
+코드에 없다 — `llm/answer.py` 가 생성 예외를 잡아 `200` 에 `llm_failed=true` · `llm_failure_reason` 으로 싣는다.
+그때 `answer` 는 「답변을 생성할 수 없습니다 …」 안내문과 근거이고, 답으로 렌더하면 안 된다.
 
 ---
 
