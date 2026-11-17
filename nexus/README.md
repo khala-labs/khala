@@ -155,9 +155,13 @@ BM25와 벡터 검색 경로를 병렬 실행하고 RRF(Reciprocal Rank Fusion, 
 └─────────────────────────────────────────────────┘
 ```
 
+> 그림의 서비스 이름과 수치(`calls` · `error_rate` · `p95`)는 모양을 보이려는 **예시**다. 실측이 아니다.
+
 ### Design-Observation Diff
 
 문서에만 있고 실제로 관측되지 않는 관계(Dead Doc), 관측되지만 문서화되지 않은 관계(Shadow Dependency)를 자동 탐지합니다.
+판정에 기간 창은 없다 — `observed_edges` 에서 `status` 가 `active` 인 관측 전부가 기준이다(`init.sql` 의 `v_edge_diff`).
+집계 한 번이 보는 범위는 `/otel/aggregate` 의 `lookback_minutes`(기본 60분)다. (확인 2026-11-17)
 
 | Diff Type | 의미 | 예시 |
 |-----------|------|------|
@@ -205,8 +209,9 @@ cp .env.example .env
 task up
 ```
 
-이 한 줄이 컨테이너를 띄우고(`--wait`로 health까지 대기), **DB 마이그레이션을 적용하고**,
-임베딩 모델(`nomic-embed-text`)을 자동으로 받습니다. 최초 실행은 모델 다운로드로 몇 분 걸립니다.
+이 한 줄이 컨테이너를 띄우고(`--wait`로 health까지 대기), **DB 마이그레이션을 적용합니다**.
+임베딩 모델(`nomic-embed-text`)은 로컬 dev 의 `docker-compose.override.yml` 에 있는 `nexus-ollama-init` 이
+자동으로 받습니다(확인 2026-11-17, `Taskfile.yml` · override). 최초 실행은 모델 다운로드로 몇 분 걸립니다.
 
 Task가 없다면 그 세 가지를 직접:
 
@@ -288,10 +293,14 @@ docker exec nexus-app nexus query "하이브리드 검색은 어떻게 결합하
 | `GET` | `/auth/dev-token` | 로컬 dev 토큰 (`NEXUS_DEV_TOKEN` 이 없으면 `null`) |
 | `GET` | `/status` | System health check |
 
+> 인증: 기본 auth 모드가 `enforced` 라 토큰 없이는 `401` 이다. 로컬 dev 에서는 `NEXUS_DEV_TOKEN` 값을
+> `Authorization: Bearer` 로 보낸다(`/auth/dev-token` 이 그 값을 돌려준다).
+
 ### Example: Search with Graph
 
 ```bash
 curl -X POST http://localhost:8000/search \
+  -H "Authorization: Bearer $NEXUS_DEV_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "payment-service 의존성",
@@ -304,12 +313,16 @@ curl -X POST http://localhost:8000/search \
 
 ```bash
 curl -X POST http://localhost:8000/search/answer \
+  -H "Authorization: Bearer $NEXUS_DEV_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
     "query": "결제 서비스가 어떤 서비스를 호출하나요?",
-    "clearance": "INTERNAL"
+    "classification_max": "INTERNAL"
   }'
 ```
+
+⚠ 이 예시는 2026-11-17 까지 `"clearance"` 를 보냈다. 그런 필드는 없어서 `422` 였다 — 등급 필드는
+`classification_max` 다([docs/API_CONTRACT.md](docs/API_CONTRACT.md) §2).
 
 Response includes evidence snippets with source URIs and provenance.
 
@@ -334,7 +347,7 @@ nexus ingest-notion --roots "..." --dry-run             # 계획만 — 적재�
 nexus ingest-notion --roots "..." --reconcile --dry-run   # 위 + 삭제 반영 계획까지
 nexus ingest-notion --roots "..." --reconcile             # soft_delete + revive 적용
 # ↑ root 를 웹 소스 콘솔에 등록해 두었다면 CLI 대신 그 화면에서 동기화하는 편이 낫다.
-#   미리보기 → 확인 → 적용 흐름이 붙어 있다.
+#   그 화면의 동기화(적재·재조정)에는 미리보기 → 확인 → 적용 흐름이 붙어 있다.
 
 # ── 소스 진단 ──
 nexus sources health                        # 토큰이 유효한가, 등록된 root 에 닿는가 (문제 시 exit 1)
@@ -555,7 +568,7 @@ python -m nexus.mcp --transport http   # streamable-http (원격)
 `nexus_document_restore` · `nexus_supersede` · `nexus_unsupersede`), Notion 소스(`nexus_sources_list` ·
 `nexus_sources_add` · `nexus_sources_health` · `nexus_sources_sync` · `nexus_sync_status`).
 
-⚠️ 런타임 이미지(`Dockerfile`)는 `mcp` 엑스트라를 설치하지 않는다 — 컨테이너 안에서는 `python -m nexus.mcp`
+⚠️ (확인 2026-11-17, master `731833b`) 런타임 이미지(`Dockerfile`)는 `mcp` 엑스트라를 설치하지 않는다 — 컨테이너 안에서는 `python -m nexus.mcp`
 가 돌지 않는다. 지금 에이전트가 쓰는 문은 CLI 다(루트 `CLAUDE.md`).
 
 ⚠️ Nexus 기본 auth 모드가 `enforced` 라 `NEXUS_MCP_TOKEN` 없이는 모든 툴이 401 이다 ([docs/MCP_SERVER.md](./docs/MCP_SERVER.md) §6).
