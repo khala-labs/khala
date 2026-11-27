@@ -1,0 +1,20 @@
+[
+  { "issue_id": "I-001", "disposition": "accepted" },
+  { "issue_id": "I-002", "disposition": "rejected", "reason": "ADR-0012 front matter is status: accepted with approved_by set; the premise that it is Proposed is false, so the gate rationale rests on an accepted record." },
+  { "issue_id": "I-003", "disposition": "accepted" },
+  { "issue_id": "I-004", "disposition": "accepted" },
+  { "issue_id": "I-005", "disposition": "accepted" },
+  { "issue_id": "I-006", "disposition": "accepted" },
+  { "issue_id": "I-007", "disposition": "accepted" },
+  { "issue_id": "I-008", "disposition": "accepted" },
+  { "issue_id": "I-009", "disposition": "accepted" },
+  { "issue_id": "I-010", "disposition": "accepted" },
+  { "issue_id": "I-011", "disposition": "accepted" },
+  { "issue_id": "I-012", "disposition": "accepted" },
+  { "issue_id": "I-013", "disposition": "accepted" },
+  { "issue_id": "I-014", "disposition": "accepted" },
+  { "issue_id": "I-015", "disposition": "accepted" },
+  { "issue_id": "I-016", "disposition": "accepted" },
+  { "issue_id": "I-017", "disposition": "accepted" },
+  { "issue_id": "I-018", "disposition": "accepted" }
+]
