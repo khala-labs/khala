@@ -13,7 +13,7 @@
 | SPEC-nexus-code-semantic-cards | Generate a natural-language card from code and prove the generator repeats itself — matching is a later SPEC |  |  | ADR-0008 |
 | SPEC-nexus-doc-code-anchors | A document that describes code should hold a typed reference into it, so "is this doc stale" is a join and not a judgement |  |  | ADR-0008 |
 
-## 🟢 승인 (66)
+## 🟢 승인 (67)
 
 | id | title | approved_by | date | linked_adrs |
 |---|---|---|---|---|
@@ -21,6 +21,7 @@
 | SPEC-arbiter-status-is-read-only | status() must not edit what it reports — flag a stale SPEC stamp the way an ADR already is | LivingLikeKrillin | 2026-09-05T09:52:52Z | ADR-0003 |
 | SPEC-nexus-a2a-external-exposure-audit-phase2 | Phase 2 — Nexus A2A external exposure + audit trail | LivingLikeKrillin | 2026-06-18 | ADR-0001 |
 | SPEC-nexus-a2a-server-phase0-spike | Phase 0 spike — Nexus A2A grounded-retrieval server | LivingLikeKrillin | 2026-06-18 | ADR-0001 |
+| SPEC-nexus-abstention-gate-negative-arm | Measure the sufficiency judge on a negative arm that no longer holds the answer — re-baseline, then revise the judge and confirm it on a second pack | LivingLikeKrillin |  | ADR-0002, ADR-0012 |
 | SPEC-nexus-abstention-gate | Abstain before generating when the evidence does not answer the question — measure the judge first, then let the answer path branch on it | LivingLikeKrillin |  | ADR-0002, ADR-0012 |
 | SPEC-nexus-access-jwt-auth | Browser identity from Cloudflare Access — verify the JWT, stop handing out a shared bearer | LivingLikeKrillin | 2026-07-10 | ADR-0004 |
 | SPEC-nexus-answer-feedback | Answer feedback: a 👎 is a lead, not a rate | LivingLikeKrillin | 2026-08-14T06:00:00Z | ADR-0002, ADR-0008 |

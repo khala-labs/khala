@@ -7,6 +7,8 @@ status: approved
 linked_adrs:
 - ADR-0002
 - ADR-0012
+retractions:
+- SPEC-nexus-abstention-gate-negative-arm
 tags:
 - nexus
 - llm
